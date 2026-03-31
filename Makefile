@@ -13,13 +13,13 @@ typecheck:
 	mypy src/qdk_pythonic/ --strict
 
 test:
-	pytest tests/unit/ -v
+	python -m pytest tests/unit/ -v
 
 test-integration:
-	pytest tests/integration/ -v
+	python -m pytest tests/integration/ -v
 
 test-all:
-	pytest tests/ -v
+	python -m pytest tests/ -v
 
 docs:
 	cd docs && make html
