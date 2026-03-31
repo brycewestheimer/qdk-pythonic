@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qdk-pythonic"
+dynamic = ["version"]
+description = "A Pythonic circuit-builder API for the Microsoft Quantum Development Kit"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "qdk-pythonic contributors"},
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Typing :: Typed",
+]
+dependencies = []
+
+[project.optional-dependencies]
+qsharp = ["qsharp>=1.25"]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+    "mypy>=1.10",
+]
+docs = [
+    "sphinx>=7.0",
+    "sphinx-rtd-theme>=2.0",
+    "sphinx-autodoc-typehints>=2.0",
+    "nbsphinx>=0.9",
+    "myst-parser>=3.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/westh/qdk-pythonic"
+Documentation = "https://westh.github.io/qdk-pythonic"
+Repository = "https://github.com/westh/qdk-pythonic"
+Changelog = "https://github.com/westh/qdk-pythonic/blob/main/CHANGELOG.md"
+
+[tool.setuptools.dynamic]
+version = {attr = "qdk_pythonic._version.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+markers = [
+    "unit: fast tests, no qsharp needed",
+    "integration: requires qsharp package",
+]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 99
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP"]
+
+[tool.mypy]
+strict = true
+python_version = "3.10"
