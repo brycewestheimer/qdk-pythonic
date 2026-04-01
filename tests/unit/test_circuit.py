@@ -359,15 +359,30 @@ def test_estimate_raises() -> None:
 
 
 @pytest.mark.unit
-def test_from_qsharp_raises() -> None:
-    with pytest.raises(NotImplementedError):
-        Circuit.from_qsharp("operation Foo() : Unit {}")
+def test_from_qsharp_returns_circuit() -> None:
+    source = """
+{
+    use q = Qubit[2];
+    H(q[0]);
+    CNOT(q[0], q[1]);
+}
+"""
+    circ = Circuit.from_qsharp(source)
+    assert circ.qubit_count() == 2
+    assert len([i for i in circ.instructions if isinstance(i, Instruction)]) == 2
 
 
 @pytest.mark.unit
-def test_from_openqasm_raises() -> None:
-    with pytest.raises(NotImplementedError):
-        Circuit.from_openqasm("OPENQASM 3.0;")
+def test_from_openqasm_returns_circuit() -> None:
+    source = """OPENQASM 3.0;
+include "stdgates.inc";
+qubit[2] q;
+h q[0];
+cx q[0], q[1];
+"""
+    circ = Circuit.from_openqasm(source)
+    assert circ.qubit_count() == 2
+    assert len([i for i in circ.instructions if isinstance(i, Instruction)]) == 2
 
 
 # ------------------------------------------------------------------
