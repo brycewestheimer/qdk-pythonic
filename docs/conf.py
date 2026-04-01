@@ -13,6 +13,8 @@ extensions = [
     "myst_parser",
 ]
 
+exclude_patterns = ["design/**"]
+
 html_theme = "sphinx_rtd_theme"
 autodoc_member_order = "bysource"
 autodoc_typehints = "description"

@@ -1,0 +1,81 @@
+Getting Started
+===============
+
+Installation
+------------
+
+Install ``qdk-pythonic`` with pip:
+
+.. code-block:: bash
+
+   pip install qdk-pythonic
+
+To run circuits on the Q# simulator or use resource estimation, install with
+the ``qsharp`` extra:
+
+.. code-block:: bash
+
+   pip install "qdk-pythonic[qsharp]"
+
+Building Your First Circuit
+----------------------------
+
+Create a Bell state circuit using the fluent API:
+
+.. code-block:: python
+
+   from qdk_pythonic import Circuit
+
+   circ = Circuit()
+   q = circ.allocate(2)
+   circ.h(q[0]).cx(q[0], q[1]).measure_all()
+
+Inspecting the Circuit
+-----------------------
+
+View the generated Q# and OpenQASM code:
+
+.. code-block:: python
+
+   print(circ.to_qsharp())
+   print(circ.to_openqasm())
+
+Draw an ASCII diagram:
+
+.. code-block:: python
+
+   print(circ.draw())
+
+Check circuit metrics:
+
+.. code-block:: python
+
+   print(f"Depth: {circ.depth()}")
+   print(f"Gate count: {circ.gate_count()}")
+   print(f"Qubit count: {circ.qubit_count()}")
+
+Running the Circuit
+--------------------
+
+Execute the circuit on the Q# simulator (requires ``qsharp``):
+
+.. code-block:: python
+
+   results = circ.run(shots=1000)
+   print(results[:10])  # first 10 shots
+
+The results are correlated: you will see either ``[Zero, Zero]`` or
+``[One, One]`` for each shot, reflecting the entanglement of the Bell pair.
+
+Serialization
+--------------
+
+Save and reload a circuit as JSON:
+
+.. code-block:: python
+
+   json_str = circ.to_json(name="bell")
+   print(json_str)
+
+   restored = Circuit.from_json(json_str)
+   print(restored.gate_count())  # same as original

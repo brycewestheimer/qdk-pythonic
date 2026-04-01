@@ -18,7 +18,9 @@ pip install -e ".[dev]"
 2. Make your changes.
 3. Run checks:
    ```bash
-   make check   # runs lint + typecheck + unit tests
+   ruff check src/
+   mypy src/qdk_pythonic/ --strict
+   pytest tests/unit/ -v
    ```
 4. Open a pull request.
 
@@ -27,22 +29,36 @@ pip install -e ".[dev]"
 - **Linting:** `ruff check src/` (line length 99)
 - **Formatting:** `ruff format src/ tests/`
 - **Type checking:** `mypy src/qdk_pythonic/ --strict`
-- **Docstrings:** Google style
+- **Docstrings:** Google style with Args, Returns, Raises sections
+- **Python:** 3.10+ (`X | Y` union syntax, not `Optional`)
 - **Commits:** Conventional commit format (`type(scope): description`)
 
 ## Tests
 
-Unit tests require no external dependencies:
+Tests use pytest with two markers:
+
+- `@pytest.mark.unit` -- no external dependencies
+- `@pytest.mark.integration` -- requires `qsharp >= 1.25`
 
 ```bash
-pytest tests/unit/ -v
+# Unit tests only
+pytest -m unit -v
+
+# Integration tests (requires qsharp)
+pip install -e ".[qsharp]"
+pytest -m integration -v
 ```
 
-Integration tests require the `qsharp` package:
+## Project structure
 
-```bash
-pip install -e ".[qsharp]"
-pytest tests/integration/ -v
+```
+src/qdk_pythonic/
+    core/          # Circuit, Qubit, Gate, Instruction data model
+    codegen/       # Q# and OpenQASM code generators
+    parser/        # Q# and OpenQASM parsers
+    execution/     # Simulation runner and resource estimator
+    analysis/      # Metrics, serialization, visualization
+    exceptions.py  # Exception hierarchy
 ```
 
 ## Reporting issues
