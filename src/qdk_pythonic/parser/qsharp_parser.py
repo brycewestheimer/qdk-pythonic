@@ -24,6 +24,10 @@ _UNSUPPORTED_KEYWORDS = frozenset({
     "while", "function", "internal", "newtype", "open", "return",
 })
 
+_RE_UNSUPPORTED = re.compile(
+    r"\b(" + "|".join(sorted(_UNSUPPORTED_KEYWORDS)) + r")\b"
+)
+
 # Regex for array qubit allocation: use <name> = Qubit[<n>];
 _RE_ALLOC_ARRAY = re.compile(
     r"use\s+(\w+)\s*=\s*Qubit\[\s*(\d+)\s*\]\s*;",
@@ -308,12 +312,10 @@ class QSharpParser:
         Raises:
             UnsupportedConstructError: If an unsupported keyword is found.
         """
-        for keyword in _UNSUPPORTED_KEYWORDS:
-            pattern = rf"\b{keyword}\b"
-            if re.search(pattern, line):
-                raise UnsupportedConstructError(
-                    f"Unsupported Q# construct: {line}"
-                )
+        if _RE_UNSUPPORTED.search(line):
+            raise UnsupportedConstructError(
+                f"Unsupported Q# construct: {line}"
+            )
 
     def _process_line(
         self,

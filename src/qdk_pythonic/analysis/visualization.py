@@ -11,6 +11,7 @@ from qdk_pythonic.core.instruction import (
     Measurement,
     RawQSharp,
 )
+from qdk_pythonic.core.parameter import Parameter
 
 if TYPE_CHECKING:
     from qdk_pythonic.core.circuit import Circuit
@@ -60,7 +61,13 @@ def _gate_symbol(inst: Instruction) -> str:
     """
     name = inst.gate.name
     if inst.params:
-        param_str = ", ".join(f"{p:.2f}" for p in inst.params)
+        parts: list[str] = []
+        for p in inst.params:
+            if isinstance(p, Parameter):
+                parts.append(p.name)
+            else:
+                parts.append(f"{p:.2f}")
+        param_str = ", ".join(parts)
         return f"[{name}({param_str})]"
     return name
 

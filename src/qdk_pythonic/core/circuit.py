@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import math
+import re
 from collections.abc import Callable
 from typing import Any
 
@@ -33,6 +34,8 @@ from qdk_pythonic.core.instruction import (
 from qdk_pythonic.core.parameter import Parameter
 from qdk_pythonic.core.qubit import Qubit, QubitRegister
 from qdk_pythonic.exceptions import CircuitError
+
+_RE_VALID_LABEL = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
 
 class Circuit:
@@ -123,6 +126,12 @@ class Circuit:
             raise CircuitError(f"Cannot allocate {n} qubits; n must be >= 1")
 
         if label is not None:
+            if not _RE_VALID_LABEL.match(label):
+                raise CircuitError(
+                    f"Invalid register label {label!r}: must start "
+                    f"with a letter or underscore and contain only "
+                    f"letters, digits, and underscores"
+                )
             if label in self._used_labels:
                 raise CircuitError(f"Duplicate register label: {label!r}")
         else:
@@ -213,7 +222,17 @@ class Circuit:
 
         Returns:
             self, for fluent chaining.
+
+        Raises:
+            CircuitError: If the instruction references qubits not
+                owned by this circuit.
         """
+        if isinstance(inst, Instruction):
+            self._validate_qubits_owned(inst.targets)
+            if inst.controls:
+                self._validate_qubits_owned(inst.controls)
+        elif isinstance(inst, Measurement):
+            self._validate_qubit_owned(inst.target)
         self._instructions.append(inst)
         return self
 
@@ -465,35 +484,50 @@ class Circuit:
             self, for fluent chaining.
 
         Raises:
-            CircuitError: If controls are not owned by this circuit.
+            CircuitError: If controls are not owned by this circuit,
+                are not distinct, overlap with targets, or the callable
+                does not add exactly one gate instruction.
         """
         for ctrl in controls:
             self._validate_qubit_owned(ctrl)
 
         count_before = len(self._instructions)
         gate_fn(*args, **kwargs)
+        added = len(self._instructions) - count_before
 
-        if len(self._instructions) <= count_before:
-            raise CircuitError(
-                "controlled() requires a gate instruction, but the callable "
-                "did not add one"
-            )
+        try:
+            if added == 0:
+                raise CircuitError(
+                    "controlled() requires a gate instruction, but the "
+                    "callable did not add one"
+                )
+            if added > 1:
+                raise CircuitError(
+                    "controlled() requires a callable that adds exactly "
+                    f"one instruction, but {added} were added"
+                )
 
-        last = self._instructions[-1]
-        if not isinstance(last, Instruction):
-            self._instructions.pop()
-            raise CircuitError(
-                "controlled() can only wrap gate instructions, not "
-                f"{type(last).__name__}"
-            )
+            last = self._instructions[-1]
+            if not isinstance(last, Instruction):
+                raise CircuitError(
+                    "controlled() can only wrap gate instructions, not "
+                    f"{type(last).__name__}"
+                )
 
-        control_indices = {q.index for q in controls}
-        target_indices = {q.index for q in last.targets}
-        if control_indices & target_indices:
-            self._instructions.pop()
-            raise CircuitError(
-                "Control qubits must be distinct from target qubits"
-            )
+            control_indices = [q.index for q in controls]
+            if len(control_indices) != len(set(control_indices)):
+                raise CircuitError(
+                    "Control qubits must be distinct"
+                )
+
+            target_indices = {q.index for q in last.targets}
+            if set(control_indices) & target_indices:
+                raise CircuitError(
+                    "Control qubits must be distinct from target qubits"
+                )
+        except CircuitError:
+            self._instructions = self._instructions[:count_before]
+            raise
 
         patched = dataclasses.replace(
             last, controls=last.controls + tuple(controls)
@@ -518,23 +552,36 @@ class Circuit:
 
         Returns:
             self, for fluent chaining.
+
+        Raises:
+            CircuitError: If the callable does not add exactly one
+                gate instruction.
         """
         count_before = len(self._instructions)
         gate_fn(*args, **kwargs)
+        added = len(self._instructions) - count_before
 
-        if len(self._instructions) <= count_before:
-            raise CircuitError(
-                "adjoint() requires a gate instruction, but the callable "
-                "did not add one"
-            )
+        try:
+            if added == 0:
+                raise CircuitError(
+                    "adjoint() requires a gate instruction, but the "
+                    "callable did not add one"
+                )
+            if added > 1:
+                raise CircuitError(
+                    "adjoint() requires a callable that adds exactly "
+                    f"one instruction, but {added} were added"
+                )
 
-        last = self._instructions[-1]
-        if not isinstance(last, Instruction):
-            self._instructions.pop()
-            raise CircuitError(
-                "adjoint() can only wrap gate instructions, not "
-                f"{type(last).__name__}"
-            )
+            last = self._instructions[-1]
+            if not isinstance(last, Instruction):
+                raise CircuitError(
+                    "adjoint() can only wrap gate instructions, not "
+                    f"{type(last).__name__}"
+                )
+        except CircuitError:
+            self._instructions = self._instructions[:count_before]
+            raise
 
         patched = dataclasses.replace(last, is_adjoint=True)
         self._instructions[-1] = patched

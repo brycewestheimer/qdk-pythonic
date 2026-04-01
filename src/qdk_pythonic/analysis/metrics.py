@@ -13,6 +13,7 @@ from qdk_pythonic.core.instruction import (
     Measurement,
     RawQSharp,
 )
+from qdk_pythonic.core.parameter import Parameter
 from qdk_pythonic.core.qubit import Qubit
 
 if TYPE_CHECKING:
@@ -82,6 +83,22 @@ def compute_qubit_count(instructions: list[InstructionLike]) -> int:
     return len(seen)
 
 
+def _serialize_param(p: float | Parameter) -> float | dict[str, str]:
+    """Serialize a parameter value for JSON compatibility."""
+    if isinstance(p, Parameter):
+        return {"kind": "symbolic", "name": p.name}
+    return p
+
+
+def _deserialize_param(p: Any) -> float | Parameter:
+    """Deserialize a parameter value from a dict or numeric literal."""
+    if isinstance(p, dict) and p.get("kind") == "symbolic":
+        return Parameter(name=p["name"])
+    if isinstance(p, int):
+        return float(p)
+    return float(p)
+
+
 def _serialize_instruction(inst: InstructionLike) -> dict[str, Any]:
     """Convert a single instruction to a plain dict.
 
@@ -96,7 +113,7 @@ def _serialize_instruction(inst: InstructionLike) -> dict[str, Any]:
             "type": "gate",
             "gate": inst.gate.name,
             "targets": [q.index for q in inst.targets],
-            "params": list(inst.params),
+            "params": [_serialize_param(p) for p in inst.params],
             "controls": [q.index for q in inst.controls],
             "is_adjoint": inst.is_adjoint,
         }
@@ -188,7 +205,10 @@ def circuit_from_dict(data: dict[str, Any]) -> Circuit:
         if entry["type"] == "gate":
             gate = GATE_CATALOG[entry["gate"]]
             targets = tuple(qubit_by_index[i] for i in entry["targets"])
-            params = tuple(entry.get("params", []))
+            params = tuple(
+                _deserialize_param(p)
+                for p in entry.get("params", [])
+            )
             controls = tuple(
                 qubit_by_index[i] for i in entry.get("controls", [])
             )
@@ -208,6 +228,10 @@ def circuit_from_dict(data: dict[str, Any]) -> Circuit:
         elif entry["type"] == "raw_qsharp":
             raw = RawQSharp(code=entry["code"])
             circ.add_instruction(raw)
+        else:
+            raise CircuitError(
+                f"Unknown instruction type: {entry['type']!r}"
+            )
 
     return circ
 

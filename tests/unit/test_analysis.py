@@ -7,6 +7,7 @@ import pytest
 from qdk_pythonic.analysis.metrics import compute_qubit_count
 from qdk_pythonic.core.circuit import Circuit
 from qdk_pythonic.core.instruction import Instruction, Measurement, RawQSharp
+from qdk_pythonic.core.parameter import Parameter
 from qdk_pythonic.exceptions import CircuitError
 
 # ------------------------------------------------------------------
@@ -469,3 +470,81 @@ def test_cross_cutting_dict_to_qsharp() -> None:
     parsed = Circuit.from_qsharp(qsharp)
     assert parsed.depth() == circ.depth()
     assert parsed.gate_count() == circ.gate_count()
+
+
+# ------------------------------------------------------------------
+# draw() with symbolic parameters (Issue 3)
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_draw_symbolic_parameter() -> None:
+    circ = Circuit()
+    q = circ.allocate(1)
+    circ.rx(Parameter("theta"), q[0])
+    output = circ.draw()
+    assert "theta" in output
+
+
+# ------------------------------------------------------------------
+# Serialization with symbolic parameters (Issue 4)
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_to_dict_symbolic_parameter() -> None:
+    circ = Circuit()
+    q = circ.allocate(1)
+    circ.rx(Parameter("theta"), q[0])
+    d = circ.to_dict()
+    params = d["instructions"][0]["params"]
+    assert params == [{"kind": "symbolic", "name": "theta"}]
+
+
+@pytest.mark.unit
+def test_to_json_symbolic_parameter() -> None:
+    circ = Circuit()
+    q = circ.allocate(1)
+    circ.rx(Parameter("theta"), q[0])
+    j = circ.to_json()
+    assert '"kind": "symbolic"' in j
+    assert '"name": "theta"' in j
+
+
+@pytest.mark.unit
+def test_from_dict_symbolic_parameter() -> None:
+    circ = Circuit()
+    q = circ.allocate(1)
+    circ.rx(Parameter("theta"), q[0])
+    d = circ.to_dict()
+    restored = Circuit.from_dict(d)
+    inst = restored.instructions[0]
+    assert isinstance(inst, Instruction)
+    assert inst.params == (Parameter("theta"),)
+
+
+@pytest.mark.unit
+def test_json_roundtrip_symbolic_parameter() -> None:
+    circ = Circuit()
+    q = circ.allocate(1)
+    circ.rx(Parameter("theta"), q[0])
+    j = circ.to_json()
+    restored = Circuit.from_json(j)
+    inst = restored.instructions[0]
+    assert isinstance(inst, Instruction)
+    assert inst.params == (Parameter("theta"),)
+
+
+# ------------------------------------------------------------------
+# from_dict() unknown instruction type (Issue 5)
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_from_dict_unknown_type_raises() -> None:
+    data = {
+        "registers": [{"size": 1}],
+        "instructions": [{"type": "mystery"}],
+    }
+    with pytest.raises(CircuitError, match="Unknown instruction type"):
+        Circuit.from_dict(data)

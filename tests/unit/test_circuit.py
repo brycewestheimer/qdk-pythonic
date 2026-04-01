@@ -1,6 +1,7 @@
 """Tests for the Circuit class."""
 
 import math
+from typing import Any
 
 import pytest
 
@@ -817,3 +818,155 @@ def test_add_three_way_composition() -> None:
     result = c1 + c2 + c3
     assert result.qubit_count() == 3
     assert result.total_gate_count() == 3
+
+
+# ------------------------------------------------------------------
+# controlled() / adjoint() atomicity (Issues 1+2)
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_controlled_multi_instruction_rollback() -> None:
+    """If gate_fn adds multiple instructions, controlled() rolls back all."""
+    circ = Circuit()
+    q = circ.allocate(3)
+
+    def multi_gate(*_args: Any, **_kwargs: Any) -> Circuit:
+        circ.h(q[1])
+        circ.x(q[2])
+        return circ
+
+    with pytest.raises(CircuitError, match="exactly one"):
+        circ.controlled(multi_gate, [q[0]], q[1])
+
+    assert len(circ.instructions) == 0
+
+
+@pytest.mark.unit
+def test_adjoint_multi_instruction_rollback() -> None:
+    """If gate_fn adds multiple instructions, adjoint() rolls back all."""
+    circ = Circuit()
+    q = circ.allocate(2)
+
+    def multi_gate(*_args: Any, **_kwargs: Any) -> Circuit:
+        circ.h(q[0])
+        circ.x(q[1])
+        return circ
+
+    with pytest.raises(CircuitError, match="exactly one"):
+        circ.adjoint(multi_gate)
+
+    assert len(circ.instructions) == 0
+
+
+@pytest.mark.unit
+def test_controlled_duplicate_controls_raises() -> None:
+    circ = Circuit()
+    q = circ.allocate(3)
+    with pytest.raises(CircuitError, match="distinct"):
+        circ.controlled(circ.x, [q[0], q[0]], q[2])
+
+
+@pytest.mark.unit
+def test_controlled_error_leaves_circuit_clean() -> None:
+    circ = Circuit()
+    q = circ.allocate(2)
+    with pytest.raises(CircuitError):
+        circ.controlled(circ.measure, [q[0]], q[1])
+    assert len(circ.instructions) == 0
+
+
+@pytest.mark.unit
+def test_adjoint_error_leaves_circuit_clean() -> None:
+    circ = Circuit()
+    q = circ.allocate(1)
+    with pytest.raises(CircuitError):
+        circ.adjoint(circ.measure, q[0])
+    assert len(circ.instructions) == 0
+
+
+# ------------------------------------------------------------------
+# add_instruction() qubit ownership (Issue 6)
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_add_instruction_foreign_qubit_raises() -> None:
+    c1 = Circuit()
+    c1.allocate(1)
+    c2 = Circuit()
+    q2 = c2.allocate(1)
+    inst = Instruction(gate=H, targets=(q2[0],))
+    with pytest.raises(CircuitError, match="not owned"):
+        c1.add_instruction(inst)
+
+
+@pytest.mark.unit
+def test_add_instruction_foreign_measurement_raises() -> None:
+    c1 = Circuit()
+    c1.allocate(1)
+    c2 = Circuit()
+    q2 = c2.allocate(1)
+    meas = Measurement(target=q2[0])
+    with pytest.raises(CircuitError, match="not owned"):
+        c1.add_instruction(meas)
+
+
+@pytest.mark.unit
+def test_add_instruction_foreign_control_raises() -> None:
+    c1 = Circuit()
+    q1 = c1.allocate(1)
+    c2 = Circuit()
+    q2 = c2.allocate(1)
+    inst = Instruction(gate=H, targets=(q1[0],), controls=(q2[0],))
+    with pytest.raises(CircuitError, match="not owned"):
+        c1.add_instruction(inst)
+
+
+@pytest.mark.unit
+def test_add_instruction_raw_qsharp_accepted() -> None:
+    circ = Circuit()
+    circ.allocate(1)
+    raw = RawQSharp(code="Message(\"hello\");")
+    circ.add_instruction(raw)
+    assert len(circ.instructions) == 1
+
+
+# ------------------------------------------------------------------
+# Register label validation (Issue 7)
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_allocate_invalid_label_hyphen() -> None:
+    circ = Circuit()
+    with pytest.raises(CircuitError, match="Invalid register label"):
+        circ.allocate(1, label="bad-name")
+
+
+@pytest.mark.unit
+def test_allocate_invalid_label_space() -> None:
+    circ = Circuit()
+    with pytest.raises(CircuitError, match="Invalid register label"):
+        circ.allocate(1, label="my reg")
+
+
+@pytest.mark.unit
+def test_allocate_invalid_label_starts_digit() -> None:
+    circ = Circuit()
+    with pytest.raises(CircuitError, match="Invalid register label"):
+        circ.allocate(1, label="1reg")
+
+
+@pytest.mark.unit
+def test_allocate_valid_label_underscore_prefix() -> None:
+    circ = Circuit()
+    reg = circ.allocate(1, label="_r")
+    assert reg.label == "_r"
+
+
+@pytest.mark.unit
+def test_allocate_valid_label_alphanumeric() -> None:
+    circ = Circuit()
+    reg = circ.allocate(1, label="my_reg_2")
+    assert reg.label == "my_reg_2"
