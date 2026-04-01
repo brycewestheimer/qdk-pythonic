@@ -1,12 +1,10 @@
-"""Minimal Bell state example."""
+"""Minimal Bell state example using the bell_state builder."""
 
-from qdk_pythonic import Circuit
+from qdk_pythonic import bell_state
 
 
 def main() -> None:
-    circ = Circuit()
-    q = circ.allocate(2)
-    circ.h(q[0]).cx(q[0], q[1]).measure_all()
+    circ = bell_state()
 
     print("Q# output:")
     print(circ.to_qsharp())

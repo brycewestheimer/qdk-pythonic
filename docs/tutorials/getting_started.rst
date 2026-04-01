@@ -67,6 +67,38 @@ Execute the circuit on the Q# simulator (requires ``qsharp``):
 The results are correlated: you will see either ``[Zero, Zero]`` or
 ``[One, One]`` for each shot, reflecting the entanglement of the Bell pair.
 
+Using Circuit Builders
+-----------------------
+
+For common circuits you can skip the manual gate calls and use the built-in
+builder functions:
+
+.. code-block:: python
+
+   from qdk_pythonic import bell_state, ghz_state, qft
+
+   # One-liner Bell state
+   bell = bell_state(measure=True)
+   print(bell.draw())
+
+   # 5-qubit GHZ state
+   ghz = ghz_state(5)
+   print(ghz.to_qsharp())
+
+   # 3-qubit QFT
+   ft = qft(3)
+   print(ft.draw())
+
+Builders return regular ``Circuit`` objects, so you can keep adding gates:
+
+.. code-block:: python
+
+   circ = ghz_state(3)
+   q = circ.qubits
+   circ.cz(q[0], q[2]).measure_all()
+
+See the :doc:`/api/builders` reference for the full list of builders.
+
 Serialization
 --------------
 

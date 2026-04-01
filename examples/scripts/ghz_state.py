@@ -1,28 +1,14 @@
-"""Parameterized GHZ state for N qubits."""
+"""Parameterized GHZ state for N qubits using the ghz_state builder."""
 
 import sys
 
-from qdk_pythonic import Circuit
-
-
-def build_ghz(n: int) -> Circuit:
-    """Build an N-qubit GHZ state circuit.
-
-    Applies H to the first qubit, then a chain of CNOTs.
-    """
-    circ = Circuit()
-    q = circ.allocate(n)
-    circ.h(q[0])
-    for i in range(n - 1):
-        circ.cx(q[i], q[i + 1])
-    circ.measure_all()
-    return circ
+from qdk_pythonic import ghz_state
 
 
 def main() -> None:
     n = int(sys.argv[1]) if len(sys.argv) > 1 else 5
 
-    circ = build_ghz(n)
+    circ = ghz_state(n)
 
     print(f"GHZ state for {n} qubits:")
     print(circ.draw())

@@ -31,6 +31,7 @@ quantum computing.
    :caption: API Reference
 
    api/circuit
+   api/builders
    api/qubit
    api/gates
    api/instruction

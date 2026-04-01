@@ -9,6 +9,7 @@ Jupyter notebooks demonstrating qdk-pythonic features.
 | [03_resource_estimation.ipynb](03_resource_estimation.ipynb) | Resource estimation workflow with custom parameters and batch sweeps |
 | [04_openqasm_interop.ipynb](04_openqasm_interop.ipynb) | OpenQASM 3.0 export, import, round-trip conversion, and JSON serialization |
 | [05_ising_model.ipynb](05_ising_model.ipynb) | Trotterized Ising model with scaling analysis and resource estimation |
+| [06_circuit_builders.ipynb](06_circuit_builders.ipynb) | Builder functions, controlled/adjoint modifiers, and composition |
 
 ## Prerequisites
 

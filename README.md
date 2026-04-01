@@ -82,6 +82,7 @@ estimate = circ.estimate()
 ## Features
 
 - **Pythonic gate methods** -- `h()`, `cx()`, `rx()`, etc. with fluent chaining
+- **Common circuit builders** -- `bell_state()`, `ghz_state()`, `w_state()`, `qft()`, and more
 - **Q# and OpenQASM 3.0 code generation** -- produce valid source strings from circuits
 - **Bidirectional parsing** -- import circuits from Q# or OpenQASM source
 - **Simulation** -- run circuits on the Q# simulator
