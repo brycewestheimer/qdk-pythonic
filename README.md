@@ -88,6 +88,7 @@ estimate = circ.estimate()
 - **Simulation** -- run circuits on the Q# simulator
 - **Resource estimation** -- estimate physical resources for fault-tolerant execution
 - **Circuit analysis** -- depth, gate count, ASCII visualization
+- **Raw Q# escape hatch** -- embed arbitrary Q# fragments for constructs the builder can't express
 - **Serialization** -- save/load circuits as JSON or dicts
 - **Type-safe** -- full type annotations, passes `mypy --strict`
 

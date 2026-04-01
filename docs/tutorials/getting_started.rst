@@ -99,6 +99,37 @@ Builders return regular ``Circuit`` objects, so you can keep adding gates:
 
 See the :doc:`/api/builders` reference for the full list of builders.
 
+Raw Q# Escape Hatch
+---------------------
+
+Some constructs -- repeat-until-success loops, classical control flow, Q#
+standard library calls -- cannot be expressed with gate-level methods. For
+these cases, embed a Q# fragment directly with ``raw_qsharp()``:
+
+.. code-block:: python
+
+   circ = Circuit()
+   q = circ.allocate(2)
+   circ.h(q[0])
+   circ.raw_qsharp("let r = M(q[0]);")
+   circ.raw_qsharp("if r == One { X(q[1]); }")
+
+The fragment is inserted verbatim into the generated Q# output. It can be
+freely interleaved with regular gate calls and chained fluently:
+
+.. code-block:: python
+
+   circ.h(q[0]).raw_qsharp("let r = M(q[0]);").x(q[1])
+
+A few things to keep in mind:
+
+- ``raw_qsharp()`` fragments are **Q#-only**. Calling ``to_openqasm()`` on a
+  circuit that contains raw fragments raises ``CodegenError``.
+- Analysis methods (``depth()``, ``gate_count()``, ``draw()``) skip raw
+  fragments since their cost cannot be determined statically.
+- The Q# code is not validated at build time -- syntax errors surface when the
+  circuit is compiled by the ``qsharp`` runtime.
+
 Serialization
 --------------
 
