@@ -331,17 +331,17 @@ def test_raw_qsharp_stores_code() -> None:
 
 
 @pytest.mark.unit
-def test_to_qsharp_raises() -> None:
+def test_to_qsharp_returns_string() -> None:
     circ = Circuit()
-    with pytest.raises(NotImplementedError):
-        circ.to_qsharp()
+    result = circ.to_qsharp()
+    assert isinstance(result, str)
 
 
 @pytest.mark.unit
-def test_to_openqasm_raises() -> None:
+def test_to_openqasm_returns_string() -> None:
     circ = Circuit()
-    with pytest.raises(NotImplementedError):
-        circ.to_openqasm()
+    result = circ.to_openqasm()
+    assert isinstance(result, str)
 
 
 @pytest.mark.unit

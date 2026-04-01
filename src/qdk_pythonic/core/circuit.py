@@ -458,12 +458,34 @@ class Circuit:
     # ------------------------------------------------------------------
 
     def to_qsharp(self) -> str:
-        """Generate Q# source code for this circuit."""
-        raise NotImplementedError("to_qsharp() is not yet implemented")
+        """Generate Q# source code for this circuit.
 
-    def to_openqasm(self) -> str:
-        """Generate OpenQASM 3.0 source code for this circuit."""
-        raise NotImplementedError("to_openqasm() is not yet implemented")
+        Returns:
+            A Q# block expression string.
+        """
+        from qdk_pythonic.codegen.qsharp import QSharpCodeGenerator
+
+        return QSharpCodeGenerator().generate(self)
+
+    def to_openqasm(self, version: str = "3.0") -> str:
+        """Generate OpenQASM source code for this circuit.
+
+        Args:
+            version: The OpenQASM version. Only "3.0" is supported.
+
+        Returns:
+            An OpenQASM program string.
+
+        Raises:
+            CodegenError: If the requested version is not supported.
+        """
+        if version != "3.0":
+            from qdk_pythonic.exceptions import CodegenError
+
+            raise CodegenError(f"Unsupported OpenQASM version: {version}")
+        from qdk_pythonic.codegen.openqasm import OpenQASMCodeGenerator
+
+        return OpenQASMCodeGenerator().generate(self)
 
     def run(self, **kwargs: Any) -> Any:
         """Execute this circuit on the qsharp simulator."""
