@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass, field
+from typing import overload
 
 
 @dataclass(frozen=True)
@@ -38,6 +39,11 @@ class QubitRegister:
         """
         self._qubits = list(qubits)
         self.label = label
+
+    @overload
+    def __getitem__(self, key: int) -> Qubit: ...
+    @overload
+    def __getitem__(self, key: slice) -> QubitRegister: ...
 
     def __getitem__(self, key: int | slice) -> Qubit | QubitRegister:
         """Index or slice into the register.
