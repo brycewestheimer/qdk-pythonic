@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 class QuantumKernel:
     """Quantum kernel via compute-uncompute circuit.
 
-    Computes k(x, y) = |<phi(x)|phi(y)>|^2 using the compute-uncompute
+    Computes ``k(x, y) = |<phi(x)|phi(y)>|^2`` using the compute-uncompute
     method: apply U(x), then U_dagger(y), then measure.
 
     Attributes:

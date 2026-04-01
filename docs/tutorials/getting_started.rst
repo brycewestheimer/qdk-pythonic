@@ -142,3 +142,22 @@ Save and reload a circuit as JSON:
 
    restored = Circuit.from_json(json_str)
    print(restored.gate_count())  # same as original
+
+What's Next
+------------
+
+Beyond circuit building, qdk-pythonic includes domain modules for
+real-world quantum computing applications:
+
+- :doc:`condensed_matter` -- Simulate Ising, Heisenberg, and Hubbard models
+  on lattice geometries.
+- :doc:`optimization` -- Encode MaxCut, QUBO, and TSP problems and build
+  QAOA circuits.
+- :doc:`quantum_finance` -- Price European call options via quantum amplitude
+  estimation.
+- :doc:`quantum_ml` -- Encode classical data and build quantum kernel and
+  variational classifier circuits.
+
+Each domain object produces a standard ``Circuit``, so everything you have
+learned here -- code generation, simulation, resource estimation -- applies
+directly to domain circuits.

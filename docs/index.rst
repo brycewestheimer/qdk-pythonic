@@ -3,9 +3,10 @@ qdk-pythonic
 
 A Pythonic circuit-builder API for the Microsoft Quantum Development Kit.
 
-Build quantum circuits using native Python methods, generate Q# or OpenQASM
-source code, run simulations, and estimate resources for fault-tolerant
-quantum computing.
+Build quantum circuits, model condensed matter systems, price financial
+derivatives, encode data for quantum ML, and solve combinatorial optimization
+problems -- with Q# and OpenQASM code generation, simulation, and resource
+estimation.
 
 .. code-block:: python
 
@@ -25,6 +26,10 @@ quantum computing.
    tutorials/getting_started
    tutorials/resource_estimation
    tutorials/openqasm_interop
+   tutorials/condensed_matter
+   tutorials/optimization
+   tutorials/quantum_finance
+   tutorials/quantum_ml
 
 .. toctree::
    :maxdepth: 2
@@ -40,6 +45,16 @@ quantum computing.
    api/execution
    api/analysis
    api/exceptions
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Domain Modules
+
+   api/domains_common
+   api/domains_condensed_matter
+   api/domains_optimization
+   api/domains_finance
+   api/domains_ml
 
 Indices and tables
 ==================

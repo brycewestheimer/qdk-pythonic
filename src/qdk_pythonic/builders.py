@@ -24,7 +24,7 @@ __all__ = [
 
 
 def bell_state(*, measure: bool = False) -> Circuit:
-    """Build a 2-qubit Bell state circuit producing (|00> + |11>) / sqrt(2).
+    """Build a 2-qubit Bell state circuit producing ``(|00> + |11>) / sqrt(2)``.
 
     Args:
         measure: If True, append measurements on both qubits.
@@ -41,7 +41,7 @@ def bell_state(*, measure: bool = False) -> Circuit:
 
 
 def ghz_state(n: int, *, measure: bool = False) -> Circuit:
-    """Build an N-qubit GHZ state circuit producing (|0...0> + |1...1>) / sqrt(2).
+    """Build an N-qubit GHZ state circuit producing ``(|0...0> + |1...1>) / sqrt(2)``.
 
     Applies H to qubit 0, then a chain of CNOT(i, i+1).
 
@@ -71,7 +71,7 @@ def w_state(n: int, *, measure: bool = False) -> Circuit:
     """Build an N-qubit W state circuit.
 
     The W state is the equal superposition of all single-excitation basis
-    states: (|10...0> + |01...0> + ... + |00...1>) / sqrt(n).
+    states: ``(|10...0> + |01...0> + ... + |00...1>) / sqrt(n)``.
 
     Uses X on the first qubit, then a sequence of Ry rotations and CNOTs
     to distribute the excitation evenly.

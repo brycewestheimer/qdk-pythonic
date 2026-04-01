@@ -54,7 +54,7 @@ class BasisState:
 
 @dataclass(frozen=True)
 class UniformSuperposition:
-    """Prepare a uniform superposition |+>^n via Hadamard on all qubits.
+    """Prepare a uniform superposition ``|+>^n`` via Hadamard on all qubits.
 
     Attributes:
         n_qubits: Number of qubits.
