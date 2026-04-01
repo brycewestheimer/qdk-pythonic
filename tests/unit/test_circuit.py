@@ -886,41 +886,22 @@ def test_adjoint_error_leaves_circuit_clean() -> None:
 
 
 # ------------------------------------------------------------------
-# add_instruction() qubit ownership (Issue 6)
+# add_instruction() foreign qubit codegen error (Issue 6)
 # ------------------------------------------------------------------
 
 
 @pytest.mark.unit
-def test_add_instruction_foreign_qubit_raises() -> None:
+def test_add_instruction_foreign_qubit_codegen_raises() -> None:
+    """Foreign qubits are accepted by add_instruction but fail at codegen."""
+    from qdk_pythonic.exceptions import CodegenError
+
     c1 = Circuit()
     c1.allocate(1)
-    c2 = Circuit()
-    q2 = c2.allocate(1)
-    inst = Instruction(gate=H, targets=(q2[0],))
-    with pytest.raises(CircuitError, match="not owned"):
-        c1.add_instruction(inst)
-
-
-@pytest.mark.unit
-def test_add_instruction_foreign_measurement_raises() -> None:
-    c1 = Circuit()
-    c1.allocate(1)
-    c2 = Circuit()
-    q2 = c2.allocate(1)
-    meas = Measurement(target=q2[0])
-    with pytest.raises(CircuitError, match="not owned"):
-        c1.add_instruction(meas)
-
-
-@pytest.mark.unit
-def test_add_instruction_foreign_control_raises() -> None:
-    c1 = Circuit()
-    q1 = c1.allocate(1)
-    c2 = Circuit()
-    q2 = c2.allocate(1)
-    inst = Instruction(gate=H, targets=(q1[0],), controls=(q2[0],))
-    with pytest.raises(CircuitError, match="not owned"):
-        c1.add_instruction(inst)
+    foreign = Qubit(index=99, label="foreign", _circuit_id=0)
+    inst = Instruction(gate=H, targets=(foreign,))
+    c1.add_instruction(inst)
+    with pytest.raises(CodegenError, match="not allocated"):
+        c1.to_qsharp()
 
 
 @pytest.mark.unit

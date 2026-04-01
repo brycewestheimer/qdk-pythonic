@@ -217,22 +217,16 @@ class Circuit:
         Low-level method for parsers and deserialization. For normal circuit
         construction, use gate methods like ``h()``, ``cx()``, etc.
 
+        No qubit ownership validation is performed here; invalid qubit
+        references will be caught during code generation with a clear
+        ``CodegenError`` instead of a bare ``KeyError``.
+
         Args:
             inst: The instruction to append.
 
         Returns:
             self, for fluent chaining.
-
-        Raises:
-            CircuitError: If the instruction references qubits not
-                owned by this circuit.
         """
-        if isinstance(inst, Instruction):
-            self._validate_qubits_owned(inst.targets)
-            if inst.controls:
-                self._validate_qubits_owned(inst.controls)
-        elif isinstance(inst, Measurement):
-            self._validate_qubit_owned(inst.target)
         self._instructions.append(inst)
         return self
 

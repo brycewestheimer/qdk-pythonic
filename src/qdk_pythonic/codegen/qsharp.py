@@ -80,8 +80,17 @@ class QSharpCodeGenerator(CodeGenerator):
 
         Returns:
             The Q# reference string.
+
+        Raises:
+            CodegenError: If the qubit is not in the map.
         """
-        return qubit_map[qubit.index]
+        try:
+            return qubit_map[qubit.index]
+        except KeyError:
+            raise CodegenError(
+                f"Qubit {qubit} (index {qubit.index}) is not allocated "
+                f"in this circuit"
+            ) from None
 
     def _build_body(
         self,
