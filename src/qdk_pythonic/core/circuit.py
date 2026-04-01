@@ -487,13 +487,43 @@ class Circuit:
 
         return OpenQASMCodeGenerator().generate(self)
 
-    def run(self, **kwargs: Any) -> Any:
-        """Execute this circuit on the qsharp simulator."""
-        raise NotImplementedError("run() is not yet implemented")
+    def run(self, shots: int = 1000, **kwargs: Any) -> list[Any]:
+        """Execute this circuit on the qsharp simulator.
 
-    def estimate(self, **kwargs: Any) -> Any:
-        """Run resource estimation on this circuit."""
-        raise NotImplementedError("estimate() is not yet implemented")
+        Args:
+            shots: Number of simulation shots. Defaults to 1000.
+            **kwargs: Additional keyword arguments forwarded to ``RunConfig``.
+
+        Returns:
+            A list of measurement results, one per shot.
+
+        Raises:
+            ExecutionError: If Q# compilation or simulation fails.
+            ImportError: If qsharp is not installed.
+        """
+        from qdk_pythonic.execution.config import RunConfig
+        from qdk_pythonic.execution.runner import run_circuit
+
+        config = RunConfig(shots=shots, **kwargs)
+        return run_circuit(self, config)
+
+    def estimate(self, params: dict[str, Any] | None = None, **kwargs: Any) -> Any:
+        """Run resource estimation on this circuit.
+
+        Args:
+            params: Optional estimator parameters (e.g. qubit model, QEC scheme).
+            **kwargs: Reserved for future use.
+
+        Returns:
+            The resource estimation result from qsharp.estimate.
+
+        Raises:
+            ExecutionError: If Q# compilation or estimation fails.
+            ImportError: If qsharp is not installed.
+        """
+        from qdk_pythonic.execution.estimator import estimate_circuit
+
+        return estimate_circuit(self, params=params)
 
     def depth(self) -> int:
         """Calculate the circuit depth."""

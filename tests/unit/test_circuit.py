@@ -345,16 +345,16 @@ def test_to_openqasm_returns_string() -> None:
 
 
 @pytest.mark.unit
-def test_run_raises() -> None:
+def test_run_requires_qsharp() -> None:
     circ = Circuit()
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(ImportError, match="qsharp is required"):
         circ.run()
 
 
 @pytest.mark.unit
-def test_estimate_raises() -> None:
+def test_estimate_requires_qsharp() -> None:
     circ = Circuit()
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(ImportError, match="qsharp is required"):
         circ.estimate()
 
 
