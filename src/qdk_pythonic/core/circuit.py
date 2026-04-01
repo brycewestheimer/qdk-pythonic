@@ -487,9 +487,25 @@ class Circuit:
 
         return OpenQASMCodeGenerator().generate(self)
 
-    def run(self, **kwargs: Any) -> Any:
-        """Execute this circuit on the qsharp simulator."""
-        raise NotImplementedError("run() is not yet implemented")
+    def run(self, shots: int = 1000, **kwargs: Any) -> list[Any]:
+        """Execute this circuit on the qsharp simulator.
+
+        Args:
+            shots: Number of simulation shots. Defaults to 1000.
+            **kwargs: Additional keyword arguments forwarded to ``RunConfig``.
+
+        Returns:
+            A list of measurement results, one per shot.
+
+        Raises:
+            ExecutionError: If Q# compilation or simulation fails.
+            ImportError: If qsharp is not installed.
+        """
+        from qdk_pythonic.execution.config import RunConfig
+        from qdk_pythonic.execution.runner import run_circuit
+
+        config = RunConfig(shots=shots, **kwargs)
+        return run_circuit(self, config)
 
     def estimate(self, **kwargs: Any) -> Any:
         """Run resource estimation on this circuit."""
