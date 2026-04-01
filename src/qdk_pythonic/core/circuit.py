@@ -543,8 +543,13 @@ class Circuit:
 
         Args:
             source: Q# source code.
+
+        Returns:
+            A Circuit built from the parsed Q# source.
         """
-        raise NotImplementedError("from_qsharp() is not yet implemented")
+        from qdk_pythonic.parser.qsharp_parser import QSharpParser
+
+        return QSharpParser().parse(source)
 
     @classmethod
     def from_openqasm(cls, source: str) -> Circuit:
@@ -552,5 +557,10 @@ class Circuit:
 
         Args:
             source: OpenQASM source code.
+
+        Returns:
+            A Circuit built from the parsed OpenQASM source.
         """
-        raise NotImplementedError("from_openqasm() is not yet implemented")
+        from qdk_pythonic.parser.openqasm_parser import OpenQASMParser
+
+        return OpenQASMParser().parse(source)
