@@ -526,16 +526,98 @@ class Circuit:
         return estimate_circuit(self, params=params)
 
     def depth(self) -> int:
-        """Calculate the circuit depth."""
-        raise NotImplementedError("depth() is not yet implemented")
+        """Calculate the circuit depth (number of time steps)."""
+        from qdk_pythonic.analysis.metrics import compute_depth
+
+        return compute_depth(self._instructions)
 
     def gate_count(self) -> dict[str, int]:
-        """Count gates by type."""
-        raise NotImplementedError("gate_count() is not yet implemented")
+        """Count gates by type.
 
-    def draw(self, **kwargs: Any) -> str:
-        """Draw an ASCII representation of the circuit."""
-        raise NotImplementedError("draw() is not yet implemented")
+        Returns:
+            A dict mapping gate name to count, sorted alphabetically.
+        """
+        from qdk_pythonic.analysis.metrics import compute_gate_count
+
+        return compute_gate_count(self._instructions)
+
+    def draw(self) -> str:
+        """Draw an ASCII representation of the circuit.
+
+        Returns:
+            A multi-line ASCII string.
+        """
+        from qdk_pythonic.analysis.visualization import draw_circuit
+
+        return draw_circuit(self)
+
+    def to_dict(
+        self,
+        name: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Serialize this circuit to a plain dict.
+
+        Args:
+            name: Optional circuit name.
+            metadata: Optional metadata dict.
+
+        Returns:
+            A dict representation of this circuit.
+        """
+        from qdk_pythonic.analysis.metrics import circuit_to_dict
+
+        return circuit_to_dict(self, name=name, metadata=metadata)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Circuit:
+        """Reconstruct a Circuit from a plain dict.
+
+        Args:
+            data: A dict previously produced by ``to_dict``.
+
+        Returns:
+            A reconstructed Circuit.
+        """
+        from qdk_pythonic.analysis.metrics import circuit_from_dict
+
+        return circuit_from_dict(data)
+
+    def to_json(
+        self,
+        name: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        indent: int = 2,
+    ) -> str:
+        """Serialize this circuit to a JSON string.
+
+        Args:
+            name: Optional circuit name.
+            metadata: Optional metadata dict.
+            indent: JSON indentation level.
+
+        Returns:
+            A JSON string representation of this circuit.
+        """
+        from qdk_pythonic.analysis.metrics import circuit_to_json
+
+        return circuit_to_json(
+            self, name=name, metadata=metadata, indent=indent,
+        )
+
+    @classmethod
+    def from_json(cls, json_str: str) -> Circuit:
+        """Reconstruct a Circuit from a JSON string.
+
+        Args:
+            json_str: A JSON string previously produced by ``to_json``.
+
+        Returns:
+            A reconstructed Circuit.
+        """
+        from qdk_pythonic.analysis.metrics import circuit_from_json
+
+        return circuit_from_json(json_str)
 
     @classmethod
     def from_qsharp(cls, source: str) -> Circuit:
