@@ -24,12 +24,14 @@ from qdk_pythonic.core.instruction import (
     Measurement,
     RawQSharp,
 )
+from qdk_pythonic.core.parameter import Parameter
 from qdk_pythonic.core.protocols import CircuitProducer
 from qdk_pythonic.core.qubit import Qubit, QubitRegister
 from qdk_pythonic.core.result import MeasurementResult
 
 __all__ = [
     "CircuitProducer",
+    "Parameter",
     "CCNOT",
     "CNOT",
     "CZ",

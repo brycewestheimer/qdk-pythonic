@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from qdk_pythonic.core.gates import GateDefinition
+from qdk_pythonic.core.parameter import Parameter
 from qdk_pythonic.core.qubit import Qubit
 
 
@@ -15,14 +16,15 @@ class Instruction:
     Attributes:
         gate: The gate definition for this instruction.
         targets: The qubit operands.
-        params: Floating-point parameters (e.g. rotation angles).
+        params: Parameters (concrete floats or symbolic
+            :class:`Parameter` instances).
         controls: Additional control qubits.
         is_adjoint: Whether to apply the adjoint of the gate.
     """
 
     gate: GateDefinition
     targets: tuple[Qubit, ...]
-    params: tuple[float, ...] = ()
+    params: tuple[float | Parameter, ...] = ()
     controls: tuple[Qubit, ...] = ()
     is_adjoint: bool = False
 

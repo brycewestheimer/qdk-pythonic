@@ -10,7 +10,6 @@ Example::
 
 from __future__ import annotations
 
-import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -69,7 +68,7 @@ class AmplitudeEncoding:
     """Encode classical data as quantum amplitudes.
 
     Encodes a normalized vector of 2^n values into n qubits using
-    Ry rotations (simplified encoding).
+    exact multi-qubit state preparation via controlled-Ry rotations.
 
     Attributes:
         n_qubits: Number of qubits.
@@ -85,6 +84,9 @@ class AmplitudeEncoding:
 
     def to_circuit(self, data: Sequence[float]) -> Circuit:
         """Encode amplitude data into a quantum circuit.
+
+        Uses the exact state preparation decomposition (Mottonen et al.)
+        to load the full amplitude vector into n qubits.
 
         Args:
             data: Data vector of length 2^n_qubits. Must be normalized.
@@ -107,19 +109,13 @@ class AmplitudeEncoding:
             )
 
         from qdk_pythonic.core.circuit import Circuit
+        from qdk_pythonic.domains.common.states import (
+            _apply_rotations,
+            _compute_rotation_angles,
+        )
 
         circ = Circuit()
         q = circ.allocate(self.n_qubits)
-
-        # Simplified encoding: compute marginal |1> probability per qubit
-        for i in range(self.n_qubits):
-            p_one = 0.0
-            for j in range(expected_len):
-                if (j >> i) & 1:
-                    p_one += data[j] * data[j]
-            p_one = min(max(p_one, 0.0), 1.0)
-            if p_one > 1e-15:
-                theta = 2.0 * math.asin(math.sqrt(p_one))
-                circ.ry(theta, q[i])
-
+        rotations = _compute_rotation_angles(list(data), self.n_qubits)
+        _apply_rotations(circ, q, rotations)
         return circ

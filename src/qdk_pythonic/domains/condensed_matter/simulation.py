@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING
 from qdk_pythonic.domains.common.evolution import TrotterEvolution
 from qdk_pythonic.domains.condensed_matter.models import (
     HeisenbergModel,
+    HubbardModel,
     IsingModel,
 )
 
@@ -27,7 +28,7 @@ if TYPE_CHECKING:
 
 
 def simulate_dynamics(
-    model: IsingModel | HeisenbergModel,
+    model: IsingModel | HeisenbergModel | HubbardModel,
     time: float,
     steps: int = 10,
     order: int = 1,

@@ -30,6 +30,7 @@ from qdk_pythonic.core.instruction import (
     Measurement,
     RawQSharp,
 )
+from qdk_pythonic.core.parameter import Parameter
 from qdk_pythonic.core.qubit import Qubit, QubitRegister
 from qdk_pythonic.exceptions import CircuitError
 
@@ -73,11 +74,14 @@ class Circuit:
                     return False
                 if len(i1.params) != len(i2.params):
                     return False
-                if not all(
-                    math.isclose(p1, p2, rel_tol=1e-9, abs_tol=1e-12)
-                    for p1, p2 in zip(i1.params, i2.params)
-                ):
-                    return False
+                for p1, p2 in zip(i1.params, i2.params):
+                    if isinstance(p1, Parameter) or isinstance(p2, Parameter):
+                        if p1 != p2:
+                            return False
+                    elif not math.isclose(
+                        p1, p2, rel_tol=1e-9, abs_tol=1e-12,
+                    ):
+                        return False
                 if (
                     tuple(q.index for q in i1.targets)
                     != tuple(q.index for q in i2.targets)
@@ -166,7 +170,7 @@ class Circuit:
         self,
         gate: GateDefinition,
         targets: tuple[Qubit, ...],
-        params: tuple[float, ...] = (),
+        params: tuple[float | Parameter, ...] = (),
     ) -> Circuit:
         """Validate and append a gate instruction.
 
@@ -331,11 +335,11 @@ class Circuit:
     # Single-qubit rotation gates (one param)
     # ------------------------------------------------------------------
 
-    def rx(self, theta: float, target: Qubit) -> Circuit:
+    def rx(self, theta: float | Parameter, target: Qubit) -> Circuit:
         """Apply Rx rotation gate.
 
         Args:
-            theta: Rotation angle in radians.
+            theta: Rotation angle in radians, or a symbolic Parameter.
             target: The qubit to apply the gate to.
 
         Returns:
@@ -343,11 +347,11 @@ class Circuit:
         """
         return self._apply_gate(RX, (target,), (theta,))
 
-    def ry(self, theta: float, target: Qubit) -> Circuit:
+    def ry(self, theta: float | Parameter, target: Qubit) -> Circuit:
         """Apply Ry rotation gate.
 
         Args:
-            theta: Rotation angle in radians.
+            theta: Rotation angle in radians, or a symbolic Parameter.
             target: The qubit to apply the gate to.
 
         Returns:
@@ -355,11 +359,11 @@ class Circuit:
         """
         return self._apply_gate(RY, (target,), (theta,))
 
-    def rz(self, theta: float, target: Qubit) -> Circuit:
+    def rz(self, theta: float | Parameter, target: Qubit) -> Circuit:
         """Apply Rz rotation gate.
 
         Args:
-            theta: Rotation angle in radians.
+            theta: Rotation angle in radians, or a symbolic Parameter.
             target: The qubit to apply the gate to.
 
         Returns:
@@ -367,11 +371,11 @@ class Circuit:
         """
         return self._apply_gate(RZ, (target,), (theta,))
 
-    def r1(self, theta: float, target: Qubit) -> Circuit:
+    def r1(self, theta: float | Parameter, target: Qubit) -> Circuit:
         """Apply R1 (phase) gate.
 
         Args:
-            theta: Phase angle in radians.
+            theta: Phase angle in radians, or a symbolic Parameter.
             target: The qubit to apply the gate to.
 
         Returns:
@@ -610,6 +614,53 @@ class Circuit:
     def registers(self) -> list[QubitRegister]:
         """Return a copy of the register list."""
         return list(self._registers)
+
+    @property
+    def parameters(self) -> list[Parameter]:
+        """Return unique symbolic parameters in order of first appearance."""
+        seen: set[str] = set()
+        result: list[Parameter] = []
+        for inst in self._instructions:
+            if isinstance(inst, Instruction):
+                for p in inst.params:
+                    if isinstance(p, Parameter) and p.name not in seen:
+                        seen.add(p.name)
+                        result.append(p)
+        return result
+
+    def bind_parameters(self, bindings: dict[str, float]) -> Circuit:
+        """Return a new circuit with symbolic parameters replaced.
+
+        Args:
+            bindings: Mapping from parameter name to concrete value.
+
+        Returns:
+            A new Circuit with all Parameters substituted.
+
+        Raises:
+            ValueError: If any Parameter has no binding.
+        """
+        copy = self._copy_structure()
+        for inst in self._instructions:
+            if isinstance(inst, Instruction) and any(
+                isinstance(p, Parameter) for p in inst.params
+            ):
+                new_params: list[float] = []
+                for p in inst.params:
+                    if isinstance(p, Parameter):
+                        if p.name not in bindings:
+                            raise ValueError(
+                                f"No binding for parameter '{p.name}'"
+                            )
+                        new_params.append(bindings[p.name])
+                    else:
+                        new_params.append(p)
+                copy._instructions.append(
+                    dataclasses.replace(inst, params=tuple(new_params)),
+                )
+            else:
+                copy._instructions.append(inst)
+        return copy
 
     # ------------------------------------------------------------------
     # Stub methods (to be implemented in later phases)

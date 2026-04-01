@@ -102,9 +102,58 @@ def test_qae_to_circuit() -> None:
     circ = qae.to_circuit()
     # 2 state qubits + 4 estimation qubits
     assert circ.qubit_count() == 6
-    # Should have H gates on estimation register
+    # Should have H gates (estimation register + state prep)
     gates = circ.gate_count()
     assert gates.get("H", 0) >= 4
+    # Should have R1 gates from inverse QFT
+    assert gates.get("R1", 0) > 0
+
+
+@pytest.mark.unit
+def test_qae_controlled_oracle() -> None:
+    """QAE should apply oracle with controlled gates."""
+    state = Circuit()
+    q = state.allocate(1)
+    state.h(q[0])
+
+    oracle = Circuit()
+    q2 = oracle.allocate(1)
+    oracle.z(q2[0])
+
+    qae = QuantumAmplitudeEstimation(
+        state_prep=state, oracle=oracle, n_estimation_qubits=2,
+    )
+    circ = qae.to_circuit()
+    has_controlled = any(
+        isinstance(i, Instruction) and len(i.controls) > 0
+        for i in circ.instructions
+    )
+    assert has_controlled
+
+
+@pytest.mark.unit
+def test_qae_power_scaling() -> None:
+    """Oracle should be applied 2^0 + 2^1 + 2^2 = 7 times for m=3."""
+    state = Circuit()
+    q = state.allocate(1)
+    state.h(q[0])
+
+    oracle = Circuit()
+    q2 = oracle.allocate(1)
+    oracle.z(q2[0])
+
+    qae = QuantumAmplitudeEstimation(
+        state_prep=state, oracle=oracle, n_estimation_qubits=3,
+    )
+    circ = qae.to_circuit()
+    # Count controlled Z gates (the oracle gate)
+    controlled_z = sum(
+        1 for i in circ.instructions
+        if isinstance(i, Instruction)
+        and i.gate.name == "Z"
+        and len(i.controls) > 0
+    )
+    assert controlled_z == 7  # 1 + 2 + 4
 
 
 @pytest.mark.unit
@@ -117,3 +166,14 @@ def test_qae_invalid_n_estimation() -> None:
         QuantumAmplitudeEstimation(
             state_prep=state, oracle=oracle, n_estimation_qubits=0,
         )
+
+
+@pytest.mark.unit
+def test_european_call_uses_qae() -> None:
+    """EuropeanCallOption should produce a circuit with inverse QFT."""
+    dist = LogNormalDistribution(mu=0.0, sigma=0.5, n_qubits=2, bounds=(0.5, 2.0))
+    option = EuropeanCallOption(strike=1.0, distribution=dist)
+    circ = option.to_circuit(n_estimation_qubits=3)
+    gates = circ.gate_count()
+    # Should have R1 gates from inverse QFT
+    assert gates.get("R1", 0) > 0

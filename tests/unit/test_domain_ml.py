@@ -118,3 +118,34 @@ def test_variational_classifier_mismatch() -> None:
     ansatz = HardwareEfficientAnsatz(n_qubits=4, depth=1)
     with pytest.raises(ValueError, match="must match"):
         VariationalClassifier(enc, ansatz)
+
+
+# ------------------------------------------------------------------
+# Exact AmplitudeEncoding tests
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_amplitude_encoding_uses_controlled_gates() -> None:
+    """Exact encoding for non-product states should use controlled-Ry."""
+    enc = AmplitudeEncoding(n_qubits=2)
+    # Non-product state: (1/sqrt(2), 0, 0, 1/sqrt(2))
+    s = 1.0 / math.sqrt(2)
+    circ = enc.to_circuit([s, 0.0, 0.0, s])
+    # Should have controlled gates (not just independent Ry)
+    from qdk_pythonic.core.instruction import Instruction
+
+    has_controlled = any(
+        isinstance(i, Instruction) and len(i.controls) > 0
+        for i in circ.instructions
+    )
+    assert has_controlled
+
+
+@pytest.mark.unit
+def test_amplitude_encoding_basis_state() -> None:
+    """Encoding a single basis state should produce a valid circuit."""
+    enc = AmplitudeEncoding(n_qubits=2)
+    circ = enc.to_circuit([0.0, 1.0, 0.0, 0.0])  # |01>
+    assert circ.qubit_count() == 2
+    assert circ.total_gate_count() > 0

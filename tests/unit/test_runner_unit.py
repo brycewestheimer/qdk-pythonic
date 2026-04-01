@@ -199,6 +199,33 @@ class TestRunCircuit:
         call_kwargs = fake_qsharp.run.call_args
         assert call_kwargs[1]["shots"] == 1000
 
+    def test_noise_forwarded_to_qsharp_run(self) -> None:
+        from qdk_pythonic.execution.runner import run_circuit
+
+        circ = self._make_circuit()
+        fake_qsharp = MagicMock()
+        fake_qsharp.run.return_value = [0, 1]
+
+        noise = (0.01, 0.02, 0.03)
+        with patch.dict(sys.modules, {"qsharp": fake_qsharp}):
+            run_circuit(circ, RunConfig(shots=2, noise=noise))
+
+        call_kwargs = fake_qsharp.run.call_args[1]
+        assert call_kwargs["noise"] == noise
+
+    def test_noise_not_forwarded_when_none(self) -> None:
+        from qdk_pythonic.execution.runner import run_circuit
+
+        circ = self._make_circuit()
+        fake_qsharp = MagicMock()
+        fake_qsharp.run.return_value = [0]
+
+        with patch.dict(sys.modules, {"qsharp": fake_qsharp}):
+            run_circuit(circ, RunConfig(shots=1))
+
+        call_kwargs = fake_qsharp.run.call_args[1]
+        assert "noise" not in call_kwargs
+
     def test_circuit_run_method_delegates(self) -> None:
         """Test that Circuit.run() properly delegates to run_circuit."""
         circ = self._make_circuit()

@@ -12,6 +12,7 @@ Example::
 from qdk_pythonic.domains.optimization.mixer import x_mixer
 from qdk_pythonic.domains.optimization.problem import (
     QUBO,
+    TSP,
     MaxCut,
 )
 from qdk_pythonic.domains.optimization.qaoa import QAOA
@@ -20,5 +21,6 @@ __all__ = [
     "MaxCut",
     "QAOA",
     "QUBO",
+    "TSP",
     "x_mixer",
 ]

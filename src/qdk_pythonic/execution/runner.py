@@ -52,6 +52,8 @@ def run_circuit(circuit: Circuit, config: RunConfig | None = None) -> list[Any]:
     run_kwargs: dict[str, Any] = {"shots": config.shots}
     if config.seed is not None:
         run_kwargs["seed"] = config.seed
+    if config.noise is not None:
+        run_kwargs["noise"] = config.noise
 
     try:
         results = qsharp.run(f"{op_name}()", **run_kwargs)

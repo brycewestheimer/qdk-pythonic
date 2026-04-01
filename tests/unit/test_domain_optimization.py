@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from qdk_pythonic.domains.optimization.mixer import x_mixer
-from qdk_pythonic.domains.optimization.problem import QUBO, MaxCut
+from qdk_pythonic.domains.optimization.problem import QUBO, TSP, MaxCut
 from qdk_pythonic.domains.optimization.qaoa import QAOA
 
 # ------------------------------------------------------------------
@@ -137,3 +137,62 @@ def test_x_mixer() -> None:
     assert m.qubit_count() == 4
     for term in m.terms:
         assert list(term.pauli_ops.values()) == ["X"]
+
+
+# ------------------------------------------------------------------
+# TSP
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_tsp_2_cities() -> None:
+    tsp = TSP(distances=[[0, 1], [1, 0]])
+    qubo = tsp.to_qubo()
+    assert qubo.n_vars == 4  # 2^2
+    ham = tsp.to_hamiltonian()
+    assert len(ham) > 0
+
+
+@pytest.mark.unit
+def test_tsp_3_cities_qubo_shape() -> None:
+    d = [[0, 1, 2], [1, 0, 3], [2, 3, 0]]
+    tsp = TSP(distances=d)
+    assert tsp.n_cities == 3
+    qubo = tsp.to_qubo()
+    assert qubo.n_vars == 9  # 3^2
+
+
+@pytest.mark.unit
+def test_tsp_penalty_auto() -> None:
+    d = [[0, 5], [3, 0]]
+    tsp = TSP(distances=d)
+    penalty = tsp._effective_penalty()
+    assert penalty > 5  # must exceed max distance
+
+
+@pytest.mark.unit
+def test_tsp_penalty_explicit() -> None:
+    tsp = TSP(distances=[[0, 1], [1, 0]], penalty=100.0)
+    assert tsp._effective_penalty() == 100.0
+
+
+@pytest.mark.unit
+def test_tsp_invalid_nonsquare() -> None:
+    with pytest.raises(ValueError, match="square"):
+        TSP(distances=[[0, 1, 2], [1, 0]])
+
+
+@pytest.mark.unit
+def test_tsp_too_small() -> None:
+    with pytest.raises(ValueError, match="at least 2"):
+        TSP(distances=[[0]])
+
+
+@pytest.mark.unit
+def test_tsp_to_circuit_roundtrip() -> None:
+    d = [[0, 1, 2], [1, 0, 3], [2, 3, 0]]
+    tsp = TSP(distances=d)
+    ham = tsp.to_hamiltonian()
+    circ = ham.to_trotter_circuit(dt=0.1, steps=1)
+    assert circ.qubit_count() == 9  # N^2 qubits
+    assert circ.total_gate_count() > 0

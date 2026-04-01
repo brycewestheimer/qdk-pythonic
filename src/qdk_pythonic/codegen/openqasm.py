@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from qdk_pythonic.codegen._helpers import build_qubit_map
 from qdk_pythonic.codegen.base import CodeGenerator
 from qdk_pythonic.core.instruction import Instruction, Measurement, RawQSharp
+from qdk_pythonic.core.parameter import Parameter
 from qdk_pythonic.exceptions import CodegenError
 
 if TYPE_CHECKING:
@@ -112,6 +113,13 @@ class OpenQASMCodeGenerator(CodeGenerator):
         Returns:
             An OpenQASM gate invocation string.
         """
+        for p in inst.params:
+            if isinstance(p, Parameter):
+                raise CodegenError(
+                    f"Cannot generate OpenQASM for unbound parameter "
+                    f"'{p.name}'; call bind_parameters() first"
+                )
+
         gate_name = inst.gate.openqasm_name
         target_refs = [self._qubit_ref(q, qubit_map) for q in inst.targets]
 

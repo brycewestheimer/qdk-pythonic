@@ -108,10 +108,68 @@ def test_heisenberg_chain() -> None:
 
 
 @pytest.mark.unit
-def test_hubbard_not_implemented() -> None:
-    model = HubbardModel(Chain(4))
-    with pytest.raises(NotImplementedError, match="Jordan-Wigner"):
-        model.to_hamiltonian()
+def test_hubbard_chain_term_count() -> None:
+    model = HubbardModel(Chain(2), t=1.0, U=1.0)
+    ham = model.to_hamiltonian()
+    # 1 edge * 2 spins * 2 (XX, YY) = 4 hopping terms
+    # 2 sites * 3 on-site terms = 6 on-site terms
+    assert len(ham) == 10
+
+
+@pytest.mark.unit
+def test_hubbard_qubit_count() -> None:
+    model = HubbardModel(Chain(3), t=1.0, U=1.0)
+    ham = model.to_hamiltonian()
+    # 2N qubits: 3 up + 3 down = 6
+    assert ham.qubit_count() == 6
+
+
+@pytest.mark.unit
+def test_hubbard_to_circuit() -> None:
+    model = HubbardModel(Chain(2), t=1.0, U=1.0)
+    ham = model.to_hamiltonian()
+    circ = ham.to_trotter_circuit(dt=0.1, steps=1)
+    assert circ.qubit_count() == 4  # 2N = 4
+    assert circ.total_gate_count() > 0
+
+
+@pytest.mark.unit
+def test_hubbard_jw_string_nonadjacent() -> None:
+    """Non-adjacent hopping should include Z-string between sites."""
+    from qdk_pythonic.domains.condensed_matter.lattice import Chain
+
+    # Create a custom "lattice" with a non-adjacent edge (0, 2)
+    class SkipLattice:
+        @property
+        def num_sites(self) -> int:
+            return 3
+
+        @property
+        def edges(self) -> list[tuple[int, int]]:
+            return [(0, 2)]
+
+    model = HubbardModel(SkipLattice(), t=1.0, U=0.0)  # type: ignore[arg-type]
+    ham = model.to_hamiltonian()
+    # Hopping (0,2) for spin-up: XX and YY terms should include Z on qubit 1
+    for term in ham.terms:
+        ops = term.pauli_ops
+        if 0 in ops and 2 in ops and ops[0] == "X":
+            # This is the XX hopping term for spin-up
+            assert 1 in ops and ops[1] == "Z"
+            break
+    else:
+        raise AssertionError("No XX term with JW string found")
+
+
+@pytest.mark.unit
+def test_hubbard_simulate_dynamics() -> None:
+    circ = simulate_dynamics(
+        HubbardModel(Chain(2), t=1.0, U=1.0),
+        time=0.5,
+        steps=2,
+    )
+    assert circ.qubit_count() == 4
+    assert circ.total_gate_count() > 0
 
 
 # ------------------------------------------------------------------

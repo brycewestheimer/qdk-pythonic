@@ -92,12 +92,16 @@ class EuropeanCallOption:
 
         return circ
 
-    def to_circuit(self, n_estimation_qubits: int = 4) -> Circuit:
-        """Build the full pricing circuit.
+    def _build_state_prep(self) -> Circuit:
+        """Build the state preparation circuit (distribution loading)."""
+        return self.distribution.to_state_prep().to_circuit()
 
-        Combines state preparation with the payoff oracle. The number
-        of estimation qubits controls the precision of the amplitude
-        estimation.
+    def to_circuit(self, n_estimation_qubits: int = 4) -> Circuit:
+        """Build the full pricing circuit via amplitude estimation.
+
+        Combines state preparation (price distribution encoding) and
+        payoff oracle into a QPE-based quantum amplitude estimation
+        circuit with inverse QFT.
 
         Args:
             n_estimation_qubits: Qubits for amplitude estimation
@@ -106,28 +110,15 @@ class EuropeanCallOption:
         Returns:
             The pricing circuit.
         """
-        state_prep = self.distribution.to_state_prep().to_circuit()
+        from qdk_pythonic.domains.finance.amplitude_estimation import (
+            QuantumAmplitudeEstimation,
+        )
+
+        state_prep = self._build_state_prep()
         oracle = self.payoff_oracle()
-
-        from qdk_pythonic.core.circuit import Circuit
-
-        n_price = self.distribution.n_qubits
-        circ = Circuit()
-        circ.allocate(n_price, label="price")
-        circ.allocate(1, label="payoff")
-        est_q = circ.allocate(n_estimation_qubits, label="est")
-
-        # State preparation on price register
-        prep_circ = state_prep
-        for inst in prep_circ.instructions:
-            circ.add_instruction(inst)
-
-        # Payoff oracle
-        for inst in oracle.instructions:
-            circ.add_instruction(inst)
-
-        # Estimation register: Hadamard for QPE initialization
-        for i in range(n_estimation_qubits):
-            circ.h(est_q[i])
-
-        return circ
+        qae = QuantumAmplitudeEstimation(
+            state_prep=state_prep,
+            oracle=oracle,
+            n_estimation_qubits=n_estimation_qubits,
+        )
+        return qae.to_circuit()
