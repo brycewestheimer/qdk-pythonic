@@ -12,13 +12,9 @@ qsharp = pytest.importorskip("qsharp", reason="qsharp not installed")
 
 
 @pytest.mark.integration
-def test_bell_state_estimate_returns_result() -> None:
+def test_bell_state_estimate_returns_result(bell_circuit: Circuit) -> None:
     """Bell state estimate() should return a result with physicalQubits."""
-    circ = Circuit()
-    q = circ.allocate(2)
-    circ.h(q[0]).cx(q[0], q[1]).measure_all()
-
-    result = circ.estimate()
+    result = bell_circuit.estimate()
     # The result should be dict-like with physical qubit information
     assert result is not None
     result_str = str(result)

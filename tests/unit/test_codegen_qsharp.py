@@ -63,126 +63,56 @@ def test_ghz_three_qubits() -> None:
 
 
 @pytest.mark.unit
-def test_h_gate_individually() -> None:
+@pytest.mark.parametrize("method,expected", [
+    ("h", "H(q[0]);"),
+    ("x", "X(q[0]);"),
+    ("y", "Y(q[0]);"),
+    ("z", "Z(q[0]);"),
+    ("s", "S(q[0]);"),
+    ("t", "T(q[0]);"),
+])
+def test_single_qubit_gate_qsharp(method: str, expected: str) -> None:
     circ = Circuit()
     q = circ.allocate(1)
-    circ.h(q[0])
+    getattr(circ, method)(q[0])
     result = QSharpCodeGenerator().generate(circ)
-    assert "H(q[0]);" in result
+    assert expected in result
 
 
 @pytest.mark.unit
-def test_x_gate_individually() -> None:
+@pytest.mark.parametrize("method,angle,gate_name", [
+    ("rx", 1.5707963267948966, "Rx"),
+    ("ry", 0.5, "Ry"),
+    ("rz", math.pi, "Rz"),
+    ("r1", math.pi / 4, "R1"),
+])
+def test_rotation_gate_qsharp(
+    method: str, angle: float, gate_name: str
+) -> None:
     circ = Circuit()
     q = circ.allocate(1)
-    circ.x(q[0])
+    getattr(circ, method)(angle, q[0])
     result = QSharpCodeGenerator().generate(circ)
-    assert "X(q[0]);" in result
-
-
-@pytest.mark.unit
-def test_y_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.y(q[0])
-    result = QSharpCodeGenerator().generate(circ)
-    assert "Y(q[0]);" in result
-
-
-@pytest.mark.unit
-def test_z_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.z(q[0])
-    result = QSharpCodeGenerator().generate(circ)
-    assert "Z(q[0]);" in result
-
-
-@pytest.mark.unit
-def test_s_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.s(q[0])
-    result = QSharpCodeGenerator().generate(circ)
-    assert "S(q[0]);" in result
-
-
-@pytest.mark.unit
-def test_t_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.t(q[0])
-    result = QSharpCodeGenerator().generate(circ)
-    assert "T(q[0]);" in result
-
-
-@pytest.mark.unit
-def test_rx_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.rx(1.5707963267948966, q[0])
-    result = QSharpCodeGenerator().generate(circ)
-    assert "Rx(1.5707963267948966, q[0]);" in result
-
-
-@pytest.mark.unit
-def test_ry_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.ry(0.5, q[0])
-    result = QSharpCodeGenerator().generate(circ)
-    assert "Ry(0.5, q[0]);" in result
-
-
-@pytest.mark.unit
-def test_rz_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.rz(math.pi, q[0])
-    result = QSharpCodeGenerator().generate(circ)
-    assert "Rz(" in result
+    assert f"{gate_name}(" in result
     assert "q[0]);" in result
 
 
 @pytest.mark.unit
-def test_r1_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.r1(math.pi / 4, q[0])
-    result = QSharpCodeGenerator().generate(circ)
-    assert "R1(" in result
-    assert "q[0]);" in result
-
-
-@pytest.mark.unit
-def test_cx_gate_individually() -> None:
+@pytest.mark.parametrize("method,expected", [
+    ("cx", "CNOT(q[0], q[1]);"),
+    ("cz", "CZ(q[0], q[1]);"),
+    ("swap", "SWAP(q[0], q[1]);"),
+])
+def test_two_qubit_gate_qsharp(method: str, expected: str) -> None:
     circ = Circuit()
     q = circ.allocate(2)
-    circ.cx(q[0], q[1])
+    getattr(circ, method)(q[0], q[1])
     result = QSharpCodeGenerator().generate(circ)
-    assert "CNOT(q[0], q[1]);" in result
+    assert expected in result
 
 
 @pytest.mark.unit
-def test_cz_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(2)
-    circ.cz(q[0], q[1])
-    result = QSharpCodeGenerator().generate(circ)
-    assert "CZ(q[0], q[1]);" in result
-
-
-@pytest.mark.unit
-def test_swap_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(2)
-    circ.swap(q[0], q[1])
-    result = QSharpCodeGenerator().generate(circ)
-    assert "SWAP(q[0], q[1]);" in result
-
-
-@pytest.mark.unit
-def test_ccnot_gate_individually() -> None:
+def test_ccnot_gate_qsharp() -> None:
     circ = Circuit()
     q = circ.allocate(3)
     circ.ccx(q[0], q[1], q[2])

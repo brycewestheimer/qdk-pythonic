@@ -3,32 +3,16 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from qdk_pythonic.exceptions import ExecutionError
+from qdk_pythonic.execution._compat import import_qsharp
+
+if TYPE_CHECKING:
+    from qdk_pythonic.core.circuit import Circuit
 
 
-def _import_qsharp() -> Any:
-    """Lazily import qsharp, raising a clear error if not installed.
-
-    Returns:
-        The qsharp module.
-
-    Raises:
-        ImportError: If qsharp is not installed.
-    """
-    try:
-        import qsharp  # type: ignore[import-not-found]
-
-        return qsharp
-    except ImportError:
-        raise ImportError(
-            "qsharp is required for resource estimation. "
-            "Install it with: pip install 'qdk-pythonic[qsharp]'"
-        ) from None
-
-
-def _build_estimation_code(circuit: Any, op_name: str) -> str:
+def _build_estimation_code(circuit: Circuit, op_name: str) -> str:
     """Generate Q# code for estimation, stripping measurements.
 
     The resource estimator requires Unit-returning operations, so all
@@ -42,25 +26,14 @@ def _build_estimation_code(circuit: Any, op_name: str) -> str:
         A Q# operation definition string (Unit return type).
     """
     from qdk_pythonic.codegen.qsharp import QSharpCodeGenerator
-    from qdk_pythonic.core.instruction import Measurement
 
-    # Filter out measurements for estimation (must return Unit)
-    filtered = [
-        inst for inst in circuit._instructions
-        if not isinstance(inst, Measurement)
-    ]
-
-    original = circuit._instructions
-    circuit._instructions = filtered
-    try:
-        generator = QSharpCodeGenerator()
-        return generator.generate_operation(op_name, circuit)
-    finally:
-        circuit._instructions = original
+    filtered_circuit = circuit.without_measurements()
+    generator = QSharpCodeGenerator()
+    return generator.generate_operation(op_name, filtered_circuit)
 
 
 def estimate_circuit(
-    circuit: Any, params: dict[str, Any] | None = None
+    circuit: Circuit, params: dict[str, Any] | None = None
 ) -> Any:
     """Estimate resources for a circuit.
 
@@ -78,7 +51,7 @@ def estimate_circuit(
         ExecutionError: If Q# compilation or estimation fails.
         ImportError: If qsharp is not installed.
     """
-    qsharp = _import_qsharp()
+    qsharp = import_qsharp()
 
     op_name = f"_qdk_est_{uuid.uuid4().hex[:8]}"
     qsharp_code = _build_estimation_code(circuit, op_name)
@@ -106,45 +79,52 @@ def estimate_circuit(
 
 
 def estimate_circuit_batch(
-    circuit: Any, params_list: list[dict[str, Any]]
+    circuit: Circuit | list[Circuit], params_list: list[dict[str, Any]]
 ) -> list[Any]:
     """Estimate resources for multiple parameter configurations.
 
-    Generates and compiles the Q# operation once, then runs the estimator
-    for each parameter set.
+    Generates and compiles the Q# operation once per circuit, then runs
+    the estimator for each parameter set.
+
+    When *circuit* is a list, each circuit is compiled separately and
+    every parameter configuration is applied to each, yielding
+    ``len(circuits) * len(params_list)`` results.
 
     Args:
-        circuit: The circuit to estimate.
+        circuit: A single circuit or a list of circuits to estimate.
         params_list: A list of estimator parameter dicts.
 
     Returns:
-        A list of resource estimation results, one per parameter set.
+        A list of resource estimation results.
 
     Raises:
         ExecutionError: If Q# compilation or any estimation fails.
         ImportError: If qsharp is not installed.
     """
-    qsharp = _import_qsharp()
+    qsharp = import_qsharp()
 
-    op_name = f"_qdk_est_{uuid.uuid4().hex[:8]}"
-    qsharp_code = _build_estimation_code(circuit, op_name)
-
-    try:
-        qsharp.eval(qsharp_code)
-    except Exception as e:
-        raise ExecutionError(
-            f"Q# compilation failed for estimation '{op_name}': {e}\n"
-            f"Generated Q#:\n{qsharp_code}"
-        ) from e
+    circuits = circuit if isinstance(circuit, list) else [circuit]
 
     results: list[Any] = []
-    for params in params_list:
+    for circ in circuits:
+        op_name = f"_qdk_est_{uuid.uuid4().hex[:8]}"
+        qsharp_code = _build_estimation_code(circ, op_name)
+
         try:
-            result = qsharp.estimate(f"{op_name}()", params=params)
-            results.append(result)
+            qsharp.eval(qsharp_code)
         except Exception as e:
             raise ExecutionError(
-                f"Resource estimation failed for '{op_name}': {e}"
+                f"Q# compilation failed for estimation '{op_name}': {e}\n"
+                f"Generated Q#:\n{qsharp_code}"
             ) from e
+
+        for params in params_list:
+            try:
+                result = qsharp.estimate(f"{op_name}()", params=params)
+                results.append(result)
+            except Exception as e:
+                raise ExecutionError(
+                    f"Resource estimation failed for '{op_name}': {e}"
+                ) from e
 
     return results

@@ -303,7 +303,7 @@ class OpenQASMParser:
                 controls=tuple(controls),
                 is_adjoint=True,
             )
-            circuit._instructions.append(inst)  # noqa: SLF001
+            circuit.add_instruction(inst)
             return
 
         # Controlled gate: ctrl @ <gate>

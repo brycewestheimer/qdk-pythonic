@@ -4,15 +4,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from qdk_pythonic.codegen._helpers import build_qubit_map
+from qdk_pythonic.codegen.base import CodeGenerator
 from qdk_pythonic.core.instruction import Instruction, Measurement, RawQSharp
 from qdk_pythonic.exceptions import CodegenError
 
 if TYPE_CHECKING:
     from qdk_pythonic.core.circuit import Circuit
-    from qdk_pythonic.core.qubit import Qubit, QubitRegister
+    from qdk_pythonic.core.qubit import Qubit
 
 
-class OpenQASMCodeGenerator:
+class OpenQASMCodeGenerator(CodeGenerator):
     """Generates OpenQASM 3.0 source code from a Circuit."""
 
     def generate(self, circuit: Circuit) -> str:
@@ -33,7 +35,7 @@ class OpenQASMCodeGenerator:
         if not registers:
             return "\n".join(lines) + "\n"
 
-        qubit_map = self._build_qubit_map(registers)
+        qubit_map = build_qubit_map(registers)
 
         # Qubit declarations
         lines.append("")
@@ -85,26 +87,6 @@ class OpenQASMCodeGenerator:
             An OpenQASM 3.0 program string.
         """
         return self.generate(circuit)
-
-    def _build_qubit_map(
-        self, registers: list[QubitRegister]
-    ) -> dict[int, str]:
-        """Build a mapping from qubit index to OpenQASM reference string.
-
-        Args:
-            registers: The circuit's qubit registers.
-
-        Returns:
-            A dict mapping qubit index to its OpenQASM reference.
-        """
-        qubit_map: dict[int, str] = {}
-
-        for reg in registers:
-            reg_label = reg.label if reg.label else "q"
-            for i, qubit in enumerate(reg):
-                qubit_map[qubit.index] = f"{reg_label}[{i}]"
-
-        return qubit_map
 
     def _qubit_ref(self, qubit: Qubit, qubit_map: dict[int, str]) -> str:
         """Get the OpenQASM reference string for a qubit.

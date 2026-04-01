@@ -75,5 +75,5 @@ def eval_math_expr(
     try:
         tree = ast.parse(cleaned, mode="eval")
         return _safe_eval_node(tree.body)
-    except (ValueError, SyntaxError, TypeError) as e:
+    except (ValueError, SyntaxError, TypeError, ZeroDivisionError) as e:
         raise ParserError(f"Cannot evaluate expression: {expr!r}") from e

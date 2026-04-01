@@ -10,19 +10,15 @@ qsharp = pytest.importorskip("qsharp", reason="qsharp not installed")
 
 
 @pytest.mark.integration
-def test_build_to_qsharp_and_run() -> None:
+def test_build_to_qsharp_and_run(bell_circuit: Circuit) -> None:
     """Build circuit, generate Q#, run, and verify results."""
-    circ = Circuit()
-    q = circ.allocate(2)
-    circ.h(q[0]).cx(q[0], q[1]).measure_all()
-
     # Verify Q# generation works
-    qs_code = circ.to_qsharp()
+    qs_code = bell_circuit.to_qsharp()
     assert "H(" in qs_code
     assert "CNOT(" in qs_code
 
     # Run and verify
-    results = circ.run(shots=50)
+    results = bell_circuit.run(shots=50)
     assert isinstance(results, list)
     assert len(results) == 50
 

@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING
 
+from qdk_pythonic.analysis._helpers import involved_indices
 from qdk_pythonic.core.instruction import (
     Instruction,
     InstructionLike,
@@ -11,19 +12,11 @@ from qdk_pythonic.core.instruction import (
     RawQSharp,
 )
 
+if TYPE_CHECKING:
+    from qdk_pythonic.core.circuit import Circuit
+
 _MAX_QUBITS = 10
 _MAX_GATES = 30
-
-
-def _get_involved_indices(inst: InstructionLike) -> list[int]:
-    """Return qubit indices touched by an instruction."""
-    if isinstance(inst, Instruction):
-        return [q.index for q in inst.targets] + [
-            q.index for q in inst.controls
-        ]
-    if isinstance(inst, Measurement):
-        return [inst.target.index]
-    return []
 
 
 def _schedule_instructions(
@@ -45,7 +38,7 @@ def _schedule_instructions(
     scheduled: list[tuple[InstructionLike, int]] = []
 
     for inst in instructions:
-        indices = _get_involved_indices(inst)
+        indices = involved_indices(inst)
         if not indices:
             continue
         step = max(qubit_time.get(idx, 0) for idx in indices)
@@ -72,7 +65,7 @@ def _gate_symbol(inst: Instruction) -> str:
     return name
 
 
-def draw_circuit(circuit: Any) -> str:
+def draw_circuit(circuit: Circuit) -> str:
     """Draw an ASCII representation of a quantum circuit.
 
     Each qubit is rendered as a horizontal wire with gate symbols

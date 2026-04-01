@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any
 
+from qdk_pythonic.analysis._helpers import involved_indices
 from qdk_pythonic.core.gates import GATE_CATALOG
 from qdk_pythonic.core.instruction import (
     Instruction,
@@ -16,24 +17,6 @@ from qdk_pythonic.core.qubit import Qubit
 
 if TYPE_CHECKING:
     from qdk_pythonic.core.circuit import Circuit
-
-
-def _involved_indices(inst: InstructionLike) -> list[int]:
-    """Return qubit indices touched by an instruction.
-
-    Args:
-        inst: An instruction, measurement, or raw Q# fragment.
-
-    Returns:
-        A list of qubit indices. Empty for RawQSharp.
-    """
-    if isinstance(inst, Instruction):
-        return [q.index for q in inst.targets] + [
-            q.index for q in inst.controls
-        ]
-    if isinstance(inst, Measurement):
-        return [inst.target.index]
-    return []
 
 
 def compute_depth(instructions: list[InstructionLike]) -> int:
@@ -51,7 +34,7 @@ def compute_depth(instructions: list[InstructionLike]) -> int:
     """
     qubit_time: dict[int, int] = {}
     for inst in instructions:
-        indices = _involved_indices(inst)
+        indices = involved_indices(inst)
         if not indices:
             continue
         step = max(qubit_time.get(idx, 0) for idx in indices)
@@ -95,7 +78,7 @@ def compute_qubit_count(instructions: list[InstructionLike]) -> int:
     """
     seen: set[int] = set()
     for inst in instructions:
-        seen.update(_involved_indices(inst))
+        seen.update(involved_indices(inst))
     return len(seen)
 
 
@@ -132,7 +115,7 @@ def _serialize_instruction(inst: InstructionLike) -> dict[str, Any]:
 
 
 def circuit_to_dict(
-    circuit: Any,
+    circuit: Circuit,
     name: str | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -172,18 +155,36 @@ def circuit_from_dict(data: dict[str, Any]) -> Circuit:
 
     Returns:
         A reconstructed Circuit.
+
+    Raises:
+        CircuitError: If the dict is missing required keys.
     """
     from qdk_pythonic.core.circuit import Circuit as _Circuit
+    from qdk_pythonic.exceptions import CircuitError
+
+    for key in ("registers", "instructions"):
+        if key not in data:
+            raise CircuitError(
+                f"Invalid circuit dict: missing required key {key!r}"
+            )
 
     circ = _Circuit()
 
     # Allocate registers to recreate qubits in the original order.
     for reg_info in data["registers"]:
+        if "size" not in reg_info:
+            raise CircuitError(
+                f"Invalid register entry: missing 'size' key in {reg_info!r}"
+            )
         circ.allocate(reg_info["size"], label=reg_info.get("label"))
 
     qubit_by_index: dict[int, Qubit] = {q.index: q for q in circ.qubits}
 
     for entry in data["instructions"]:
+        if "type" not in entry:
+            raise CircuitError(
+                f"Invalid instruction entry: missing 'type' key in {entry!r}"
+            )
         if entry["type"] == "gate":
             gate = GATE_CATALOG[entry["gate"]]
             targets = tuple(qubit_by_index[i] for i in entry["targets"])
@@ -199,20 +200,20 @@ def circuit_from_dict(data: dict[str, Any]) -> Circuit:
                 controls=controls,
                 is_adjoint=is_adjoint,
             )
-            circ._instructions.append(inst)  # noqa: SLF001
+            circ.add_instruction(inst)
         elif entry["type"] == "measurement":
             target = qubit_by_index[entry["target"]]
             meas = Measurement(target=target, label=entry.get("label"))
-            circ._instructions.append(meas)  # noqa: SLF001
+            circ.add_instruction(meas)
         elif entry["type"] == "raw_qsharp":
             raw = RawQSharp(code=entry["code"])
-            circ._instructions.append(raw)  # noqa: SLF001
+            circ.add_instruction(raw)
 
     return circ
 
 
 def circuit_to_json(
-    circuit: Any,
+    circuit: Circuit,
     name: str | None = None,
     metadata: dict[str, Any] | None = None,
     indent: int = 2,

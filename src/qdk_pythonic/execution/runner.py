@@ -3,33 +3,17 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from qdk_pythonic.exceptions import ExecutionError
+from qdk_pythonic.execution._compat import import_qsharp
 from qdk_pythonic.execution.config import RunConfig
 
-
-def _import_qsharp() -> Any:
-    """Lazily import qsharp, raising a clear error if not installed.
-
-    Returns:
-        The qsharp module.
-
-    Raises:
-        ImportError: If qsharp is not installed.
-    """
-    try:
-        import qsharp  # type: ignore[import-not-found]
-
-        return qsharp
-    except ImportError:
-        raise ImportError(
-            "qsharp is required for circuit execution. "
-            "Install it with: pip install 'qdk-pythonic[qsharp]'"
-        ) from None
+if TYPE_CHECKING:
+    from qdk_pythonic.core.circuit import Circuit
 
 
-def run_circuit(circuit: Any, config: RunConfig | None = None) -> list[Any]:
+def run_circuit(circuit: Circuit, config: RunConfig | None = None) -> list[Any]:
     """Execute a circuit on the qsharp simulator.
 
     Generates a named Q# operation from the circuit, compiles it via
@@ -49,7 +33,7 @@ def run_circuit(circuit: Any, config: RunConfig | None = None) -> list[Any]:
     if config is None:
         config = RunConfig()
 
-    qsharp = _import_qsharp()
+    qsharp = import_qsharp()
 
     from qdk_pythonic.codegen.qsharp import QSharpCodeGenerator
 

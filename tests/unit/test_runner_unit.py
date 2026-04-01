@@ -24,24 +24,37 @@ class TestRunConfig:
         cfg = RunConfig(shots=500)
         assert cfg.shots == 500
 
+    def test_zero_shots_raises(self) -> None:
+        with pytest.raises(ValueError, match="shots must be >= 1"):
+            RunConfig(shots=0)
+
+    def test_negative_shots_raises(self) -> None:
+        with pytest.raises(ValueError, match="shots must be >= 1"):
+            RunConfig(shots=-1)
+
+    def test_frozen(self) -> None:
+        cfg = RunConfig()
+        with pytest.raises(AttributeError):
+            cfg.shots = 5  # type: ignore[misc]
+
 
 @pytest.mark.unit
 class TestImportQsharp:
     """Tests for the _import_qsharp helper."""
 
     def test_raises_import_error_with_message_when_missing(self) -> None:
-        from qdk_pythonic.execution.runner import _import_qsharp
+        from qdk_pythonic.execution._compat import import_qsharp
 
         with patch.dict(sys.modules, {"qsharp": None}):
             with pytest.raises(ImportError, match="qsharp is required"):
-                _import_qsharp()
+                import_qsharp()
 
     def test_returns_module_when_available(self) -> None:
-        from qdk_pythonic.execution.runner import _import_qsharp
+        from qdk_pythonic.execution._compat import import_qsharp
 
         fake_qsharp = ModuleType("qsharp")
         with patch.dict(sys.modules, {"qsharp": fake_qsharp}):
-            result = _import_qsharp()
+            result = import_qsharp()
             assert result is fake_qsharp
 
 

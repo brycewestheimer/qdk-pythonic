@@ -7,6 +7,7 @@ import pytest
 from qdk_pythonic.analysis.metrics import compute_qubit_count
 from qdk_pythonic.core.circuit import Circuit
 from qdk_pythonic.core.instruction import Instruction, Measurement, RawQSharp
+from qdk_pythonic.exceptions import CircuitError
 
 # ------------------------------------------------------------------
 # compute_depth
@@ -291,6 +292,37 @@ def test_serialization_preserves_measurement_label() -> None:
     inst = restored.instructions[0]
     assert isinstance(inst, Measurement)
     assert inst.label == "result"
+
+
+# ------------------------------------------------------------------
+# circuit_from_dict validation
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_from_dict_missing_registers_raises() -> None:
+    with pytest.raises(CircuitError, match="missing required key 'registers'"):
+        Circuit.from_dict({"instructions": []})
+
+
+@pytest.mark.unit
+def test_from_dict_missing_instructions_raises() -> None:
+    with pytest.raises(CircuitError, match="missing required key 'instructions'"):
+        Circuit.from_dict({"registers": []})
+
+
+@pytest.mark.unit
+def test_from_dict_missing_register_size_raises() -> None:
+    data = {"registers": [{"label": "q"}], "instructions": []}
+    with pytest.raises(CircuitError, match="missing 'size'"):
+        Circuit.from_dict(data)
+
+
+@pytest.mark.unit
+def test_from_dict_missing_instruction_type_raises() -> None:
+    data = {"registers": [{"size": 1}], "instructions": [{"gate": "H"}]}
+    with pytest.raises(CircuitError, match="missing 'type'"):
+        Circuit.from_dict(data)
 
 
 # ------------------------------------------------------------------

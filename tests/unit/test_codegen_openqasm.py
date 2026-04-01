@@ -68,127 +68,56 @@ def test_ghz_three_qubits() -> None:
 
 
 @pytest.mark.unit
-def test_h_gate_individually() -> None:
+@pytest.mark.parametrize("method,expected", [
+    ("h", "h q[0];"),
+    ("x", "x q[0];"),
+    ("y", "y q[0];"),
+    ("z", "z q[0];"),
+    ("s", "s q[0];"),
+    ("t", "t q[0];"),
+])
+def test_single_qubit_gate_openqasm(method: str, expected: str) -> None:
     circ = Circuit()
     q = circ.allocate(1)
-    circ.h(q[0])
+    getattr(circ, method)(q[0])
     result = OpenQASMCodeGenerator().generate(circ)
-    assert "h q[0];" in result
+    assert expected in result
 
 
 @pytest.mark.unit
-def test_x_gate_individually() -> None:
+@pytest.mark.parametrize("method,angle,gate_name", [
+    ("rx", 1.5707963267948966, "rx"),
+    ("ry", 0.5, "ry"),
+    ("rz", math.pi, "rz"),
+    ("r1", math.pi / 4, "p"),
+])
+def test_rotation_gate_openqasm(
+    method: str, angle: float, gate_name: str
+) -> None:
     circ = Circuit()
     q = circ.allocate(1)
-    circ.x(q[0])
+    getattr(circ, method)(angle, q[0])
     result = OpenQASMCodeGenerator().generate(circ)
-    assert "x q[0];" in result
-
-
-@pytest.mark.unit
-def test_y_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.y(q[0])
-    result = OpenQASMCodeGenerator().generate(circ)
-    assert "y q[0];" in result
-
-
-@pytest.mark.unit
-def test_z_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.z(q[0])
-    result = OpenQASMCodeGenerator().generate(circ)
-    assert "z q[0];" in result
-
-
-@pytest.mark.unit
-def test_s_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.s(q[0])
-    result = OpenQASMCodeGenerator().generate(circ)
-    assert "s q[0];" in result
-
-
-@pytest.mark.unit
-def test_t_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.t(q[0])
-    result = OpenQASMCodeGenerator().generate(circ)
-    assert "t q[0];" in result
-
-
-@pytest.mark.unit
-def test_rx_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.rx(1.5707963267948966, q[0])
-    result = OpenQASMCodeGenerator().generate(circ)
-    assert "rx(1.5707963267948966) q[0];" in result
-
-
-@pytest.mark.unit
-def test_ry_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.ry(0.5, q[0])
-    result = OpenQASMCodeGenerator().generate(circ)
-    assert "ry(0.5) q[0];" in result
-
-
-@pytest.mark.unit
-def test_rz_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.rz(math.pi, q[0])
-    result = OpenQASMCodeGenerator().generate(circ)
-    assert "rz(" in result
+    assert f"{gate_name}(" in result
     assert "q[0];" in result
 
 
 @pytest.mark.unit
-def test_r1_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.r1(math.pi / 4, q[0])
-    result = OpenQASMCodeGenerator().generate(circ)
-    # R1 maps to "p" in OpenQASM
-    assert "p(" in result
-    assert "q[0];" in result
-
-
-@pytest.mark.unit
-def test_cx_gate_individually() -> None:
+@pytest.mark.parametrize("method,expected", [
+    ("cx", "cx q[0], q[1];"),
+    ("cz", "cz q[0], q[1];"),
+    ("swap", "swap q[0], q[1];"),
+])
+def test_two_qubit_gate_openqasm(method: str, expected: str) -> None:
     circ = Circuit()
     q = circ.allocate(2)
-    circ.cx(q[0], q[1])
+    getattr(circ, method)(q[0], q[1])
     result = OpenQASMCodeGenerator().generate(circ)
-    assert "cx q[0], q[1];" in result
+    assert expected in result
 
 
 @pytest.mark.unit
-def test_cz_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(2)
-    circ.cz(q[0], q[1])
-    result = OpenQASMCodeGenerator().generate(circ)
-    assert "cz q[0], q[1];" in result
-
-
-@pytest.mark.unit
-def test_swap_gate_individually() -> None:
-    circ = Circuit()
-    q = circ.allocate(2)
-    circ.swap(q[0], q[1])
-    result = OpenQASMCodeGenerator().generate(circ)
-    assert "swap q[0], q[1];" in result
-
-
-@pytest.mark.unit
-def test_ccnot_gate_individually() -> None:
+def test_ccnot_gate_openqasm() -> None:
     circ = Circuit()
     q = circ.allocate(3)
     circ.ccx(q[0], q[1], q[2])

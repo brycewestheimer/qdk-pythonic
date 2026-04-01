@@ -58,11 +58,11 @@ class TestEstimateCircuit:
         assert "H(" in code
         assert "CNOT(" in code
 
-    def test_circuit_instructions_restored_after_estimation(self) -> None:
+    def test_circuit_instructions_not_mutated(self) -> None:
         from qdk_pythonic.execution.estimator import estimate_circuit
 
         circ = _make_bell_circuit()
-        original_count = len(circ._instructions)
+        original_count = len(circ.instructions)
 
         fake_qsharp = MagicMock()
         fake_qsharp.estimate.return_value = {}
@@ -70,7 +70,7 @@ class TestEstimateCircuit:
         with patch.dict(sys.modules, {"qsharp": fake_qsharp}):
             estimate_circuit(circ)
 
-        assert len(circ._instructions) == original_count
+        assert len(circ.instructions) == original_count
 
     def test_params_passed_through(self) -> None:
         from qdk_pythonic.execution.estimator import estimate_circuit
@@ -219,6 +219,45 @@ class TestEstimateCircuitBatch:
         with patch.dict(sys.modules, {"qsharp": fake_qsharp}):
             with pytest.raises(ExecutionError, match="Resource estimation failed"):
                 estimate_circuit_batch(circ, [{"bad": True}])
+
+    def test_batch_with_list_of_circuits(self) -> None:
+        from qdk_pythonic.execution.estimator import estimate_circuit_batch
+
+        circ1 = _make_bell_circuit()
+        circ2 = _make_bell_circuit_no_measure()
+
+        fake_qsharp = MagicMock()
+        fake_qsharp.estimate.side_effect = [
+            {"result": "1a"},
+            {"result": "1b"},
+            {"result": "2a"},
+            {"result": "2b"},
+        ]
+
+        params_list = [{"config": "a"}, {"config": "b"}]
+
+        with patch.dict(sys.modules, {"qsharp": fake_qsharp}):
+            results = estimate_circuit_batch([circ1, circ2], params_list)
+
+        # 2 circuits x 2 params = 4 results
+        assert len(results) == 4
+        # eval called twice (once per circuit)
+        assert fake_qsharp.eval.call_count == 2
+        # estimate called 4 times
+        assert fake_qsharp.estimate.call_count == 4
+
+    def test_batch_single_circuit_backward_compatible(self) -> None:
+        from qdk_pythonic.execution.estimator import estimate_circuit_batch
+
+        circ = _make_bell_circuit()
+        fake_qsharp = MagicMock()
+        fake_qsharp.estimate.side_effect = [{"r": 1}, {"r": 2}]
+
+        with patch.dict(sys.modules, {"qsharp": fake_qsharp}):
+            results = estimate_circuit_batch(circ, [{"a": 1}, {"b": 2}])
+
+        assert len(results) == 2
+        assert fake_qsharp.eval.call_count == 1
 
     def test_import_error_when_qsharp_missing(self) -> None:
         from qdk_pythonic.execution.estimator import estimate_circuit_batch

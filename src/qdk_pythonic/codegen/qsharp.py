@@ -4,14 +4,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from qdk_pythonic.codegen._helpers import build_qubit_map
+from qdk_pythonic.codegen.base import CodeGenerator
 from qdk_pythonic.core.instruction import Instruction, Measurement, RawQSharp
 
 if TYPE_CHECKING:
     from qdk_pythonic.core.circuit import Circuit
-    from qdk_pythonic.core.qubit import Qubit, QubitRegister
+    from qdk_pythonic.core.qubit import Qubit
 
 
-class QSharpCodeGenerator:
+class QSharpCodeGenerator(CodeGenerator):
     """Generates Q# source code from a Circuit."""
 
     def generate(self, circuit: Circuit) -> str:
@@ -27,7 +29,7 @@ class QSharpCodeGenerator:
         if not registers:
             return "{ }"
 
-        qubit_map = self._build_qubit_map(registers)
+        qubit_map = build_qubit_map(registers)
         body_lines = self._build_body(circuit, qubit_map)
 
         if not body_lines:
@@ -53,7 +55,7 @@ class QSharpCodeGenerator:
         if not registers:
             return f"operation {name}() : Unit {{ }}"
 
-        qubit_map = self._build_qubit_map(registers)
+        qubit_map = build_qubit_map(registers)
         body_lines = self._build_body(circuit, qubit_map)
 
         if not body_lines:
@@ -66,26 +68,6 @@ class QSharpCodeGenerator:
             lines.append(f"    {line}")
         lines.append("}")
         return "\n".join(lines)
-
-    def _build_qubit_map(
-        self, registers: list[QubitRegister]
-    ) -> dict[int, str]:
-        """Build a mapping from qubit index to Q# reference string.
-
-        Args:
-            registers: The circuit's qubit registers.
-
-        Returns:
-            A dict mapping qubit index to its Q# reference (e.g. "q[0]").
-        """
-        qubit_map: dict[int, str] = {}
-
-        for reg in registers:
-            reg_label = reg.label if reg.label else "q"
-            for i, qubit in enumerate(reg):
-                qubit_map[qubit.index] = f"{reg_label}[{i}]"
-
-        return qubit_map
 
     def _qubit_ref(self, qubit: Qubit, qubit_map: dict[int, str]) -> str:
         """Get the Q# reference string for a qubit.

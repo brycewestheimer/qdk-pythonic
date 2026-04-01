@@ -69,140 +69,53 @@ def test_qubit_count_returns_total() -> None:
 
 
 @pytest.mark.unit
-def test_h_gate_appends_instruction() -> None:
+@pytest.mark.parametrize("method_name,gate_def", [
+    ("h", H), ("x", X), ("y", Y), ("z", Z), ("s", S), ("t", T),
+])
+def test_single_qubit_gate_appends_instruction(
+    method_name: str, gate_def: object
+) -> None:
     circ = Circuit()
     q = circ.allocate(1)
-    circ.h(q[0])
+    getattr(circ, method_name)(q[0])
     assert len(circ.instructions) == 1
     inst = circ.instructions[0]
     assert isinstance(inst, Instruction)
-    assert inst.gate is H
+    assert inst.gate is gate_def
     assert inst.targets == (q[0],)
 
 
 @pytest.mark.unit
-def test_x_gate() -> None:
+@pytest.mark.parametrize("method_name,gate_def,angle", [
+    ("rx", RX, math.pi / 4),
+    ("ry", RY, 1.23),
+    ("rz", RZ, 0.5),
+    ("r1", R1, math.pi),
+])
+def test_rotation_gate_stores_param(
+    method_name: str, gate_def: object, angle: float
+) -> None:
     circ = Circuit()
     q = circ.allocate(1)
-    circ.x(q[0])
+    getattr(circ, method_name)(angle, q[0])
     inst = circ.instructions[0]
     assert isinstance(inst, Instruction)
-    assert inst.gate is X
+    assert inst.gate is gate_def
+    assert inst.params == (angle,)
 
 
 @pytest.mark.unit
-def test_y_gate() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.y(q[0])
-    inst = circ.instructions[0]
-    assert isinstance(inst, Instruction)
-    assert inst.gate is Y
-
-
-@pytest.mark.unit
-def test_z_gate() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.z(q[0])
-    inst = circ.instructions[0]
-    assert isinstance(inst, Instruction)
-    assert inst.gate is Z
-
-
-@pytest.mark.unit
-def test_s_gate() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.s(q[0])
-    inst = circ.instructions[0]
-    assert isinstance(inst, Instruction)
-    assert inst.gate is S
-
-
-@pytest.mark.unit
-def test_t_gate() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.t(q[0])
-    inst = circ.instructions[0]
-    assert isinstance(inst, Instruction)
-    assert inst.gate is T
-
-
-@pytest.mark.unit
-def test_rx_gate_stores_param() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.rx(math.pi / 4, q[0])
-    inst = circ.instructions[0]
-    assert isinstance(inst, Instruction)
-    assert inst.gate is RX
-    assert inst.params == (math.pi / 4,)
-
-
-@pytest.mark.unit
-def test_ry_gate_stores_param() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.ry(1.23, q[0])
-    inst = circ.instructions[0]
-    assert isinstance(inst, Instruction)
-    assert inst.gate is RY
-    assert inst.params == (1.23,)
-
-
-@pytest.mark.unit
-def test_rz_gate_stores_param() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.rz(0.5, q[0])
-    inst = circ.instructions[0]
-    assert isinstance(inst, Instruction)
-    assert inst.gate is RZ
-    assert inst.params == (0.5,)
-
-
-@pytest.mark.unit
-def test_r1_gate_stores_param() -> None:
-    circ = Circuit()
-    q = circ.allocate(1)
-    circ.r1(math.pi, q[0])
-    inst = circ.instructions[0]
-    assert isinstance(inst, Instruction)
-    assert inst.gate is R1
-    assert inst.params == (math.pi,)
-
-
-@pytest.mark.unit
-def test_cx_creates_two_qubit_instruction() -> None:
+@pytest.mark.parametrize("method_name,gate_def", [
+    ("cx", CNOT), ("cz", CZ), ("swap", SWAP),
+])
+def test_two_qubit_gate(method_name: str, gate_def: object) -> None:
     circ = Circuit()
     q = circ.allocate(2)
-    circ.cx(q[0], q[1])
+    getattr(circ, method_name)(q[0], q[1])
     inst = circ.instructions[0]
     assert isinstance(inst, Instruction)
-    assert inst.gate is CNOT
+    assert inst.gate is gate_def
     assert inst.targets == (q[0], q[1])
-
-
-@pytest.mark.unit
-def test_cz_gate() -> None:
-    circ = Circuit()
-    q = circ.allocate(2)
-    circ.cz(q[0], q[1])
-    inst = circ.instructions[0]
-    assert isinstance(inst, Instruction)
-    assert inst.gate is CZ
-
-
-@pytest.mark.unit
-def test_swap_gate() -> None:
-    circ = Circuit()
-    q = circ.allocate(2)
-    circ.swap(q[0], q[1])
-    inst = circ.instructions[0]
-    assert isinstance(inst, Instruction)
-    assert inst.gate is SWAP
 
 
 @pytest.mark.unit
@@ -495,6 +408,68 @@ def test_allocate_unlabeled_unique_labels() -> None:
     assert r1.label is not None
     assert r2.label is not None
     assert r1.label != r2.label
+
+
+# ------------------------------------------------------------------
+# add_instruction / without_measurements
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_add_instruction_appends() -> None:
+    circ = Circuit()
+    q = circ.allocate(1)
+    inst = Instruction(gate=H, targets=(q[0],))
+    circ.add_instruction(inst)
+    assert len(circ.instructions) == 1
+    assert circ.instructions[0] is inst
+
+
+@pytest.mark.unit
+def test_add_instruction_fluent() -> None:
+    circ = Circuit()
+    q = circ.allocate(1)
+    inst = Instruction(gate=H, targets=(q[0],))
+    result = circ.add_instruction(inst)
+    assert result is circ
+
+
+@pytest.mark.unit
+def test_add_instruction_measurement() -> None:
+    circ = Circuit()
+    q = circ.allocate(1)
+    meas = Measurement(target=q[0])
+    circ.add_instruction(meas)
+    assert isinstance(circ.instructions[0], Measurement)
+
+
+@pytest.mark.unit
+def test_add_instruction_raw_qsharp() -> None:
+    circ = Circuit()
+    raw = RawQSharp(code="let x = 1;")
+    circ.add_instruction(raw)
+    assert isinstance(circ.instructions[0], RawQSharp)
+
+
+@pytest.mark.unit
+def test_without_measurements_filters() -> None:
+    circ = Circuit()
+    q = circ.allocate(2)
+    circ.h(q[0]).cx(q[0], q[1]).measure_all()
+    filtered = circ.without_measurements()
+    assert len(filtered.instructions) == 2  # H and CNOT only
+    for inst in filtered.instructions:
+        assert not isinstance(inst, Measurement)
+
+
+@pytest.mark.unit
+def test_without_measurements_preserves_original() -> None:
+    circ = Circuit()
+    q = circ.allocate(2)
+    circ.h(q[0]).measure(q[0])
+    original_count = len(circ.instructions)
+    circ.without_measurements()
+    assert len(circ.instructions) == original_count
 
 
 # ------------------------------------------------------------------

@@ -151,6 +151,41 @@ class Circuit:
         self._instructions.append(inst)
         return self
 
+    def add_instruction(self, inst: InstructionLike) -> Circuit:
+        """Append a pre-built instruction to the circuit.
+
+        Low-level method for parsers and deserialization. For normal circuit
+        construction, use gate methods like ``h()``, ``cx()``, etc.
+
+        Args:
+            inst: The instruction to append.
+
+        Returns:
+            self, for fluent chaining.
+        """
+        self._instructions.append(inst)
+        return self
+
+    def without_measurements(self) -> Circuit:
+        """Return a shallow copy with all measurements removed.
+
+        Qubit allocations and gate instructions are preserved; only
+        ``Measurement`` entries are filtered out.
+
+        Returns:
+            A new Circuit without measurement instructions.
+        """
+        copy = Circuit.__new__(Circuit)
+        copy._instructions = [
+            i for i in self._instructions if not isinstance(i, Measurement)
+        ]
+        copy._qubits = list(self._qubits)
+        copy._registers = list(self._registers)
+        copy._next_qubit_index = self._next_qubit_index
+        copy._used_labels = set(self._used_labels)
+        copy._register_counter = self._register_counter
+        return copy
+
     # ------------------------------------------------------------------
     # Single-qubit gates (no params)
     # ------------------------------------------------------------------

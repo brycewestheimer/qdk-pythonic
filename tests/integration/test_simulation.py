@@ -10,25 +10,17 @@ qsharp = pytest.importorskip("qsharp", reason="qsharp not installed")
 
 
 @pytest.mark.integration
-def test_bell_state_run_returns_list() -> None:
+def test_bell_state_run_returns_list(bell_circuit: Circuit) -> None:
     """Bell state run(shots=100) should return a list of results."""
-    circ = Circuit()
-    q = circ.allocate(2)
-    circ.h(q[0]).cx(q[0], q[1]).measure_all()
-
-    results = circ.run(shots=100)
+    results = bell_circuit.run(shots=100)
     assert isinstance(results, list)
     assert len(results) == 100
 
 
 @pytest.mark.integration
-def test_bell_state_results_correlated() -> None:
+def test_bell_state_results_correlated(bell_circuit: Circuit) -> None:
     """Bell state results should only contain correlated outcomes (00, 11)."""
-    circ = Circuit()
-    q = circ.allocate(2)
-    circ.h(q[0]).cx(q[0], q[1]).measure_all()
-
-    results = circ.run(shots=200)
+    results = bell_circuit.run(shots=200)
     for result in results:
         # Result format depends on qsharp version; check correlation
         result_str = str(result)

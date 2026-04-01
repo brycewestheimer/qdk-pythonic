@@ -430,3 +430,31 @@ def test_unrecognized_statement_raises() -> None:
 """
     with pytest.raises(ParserError, match="Unrecognized Q# statement"):
         QSharpParser().parse(source)
+
+
+# ------------------------------------------------------------------
+# Expression evaluator (_expr_eval)
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_eval_division_by_zero_raises_parser_error() -> None:
+    from qdk_pythonic.parser._expr_eval import eval_math_expr
+
+    with pytest.raises(ParserError, match="Cannot evaluate expression"):
+        eval_math_expr("1/0")
+
+
+@pytest.mark.unit
+def test_eval_constant_division_by_zero_raises() -> None:
+    from qdk_pythonic.parser._expr_eval import eval_math_expr
+
+    with pytest.raises(ParserError, match="Cannot evaluate expression"):
+        eval_math_expr("pi/0", constants={"pi": math.pi})
+
+
+@pytest.mark.unit
+def test_eval_normal_division() -> None:
+    from qdk_pythonic.parser._expr_eval import eval_math_expr
+
+    assert eval_math_expr("4/2") == pytest.approx(2.0)
