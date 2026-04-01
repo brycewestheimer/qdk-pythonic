@@ -12,25 +12,20 @@ qsharp = pytest.importorskip("qsharp", reason="qsharp not installed")
 
 
 @pytest.mark.integration
-def test_bell_state_estimate_returns_result(bell_circuit: Circuit) -> None:
-    """Bell state estimate() should return a result with physicalQubits."""
-    result = bell_circuit.estimate()
-    # The result should be dict-like with physical qubit information
+def test_estimate_returns_result(estimable_circuit: Circuit) -> None:
+    """Estimation of a circuit with T gates should return a result."""
+    result = estimable_circuit.estimate()
     assert result is not None
     result_str = str(result)
     assert "physicalQubits" in result_str or hasattr(result, "physical_qubits")
 
 
 @pytest.mark.integration
-def test_estimate_with_custom_params() -> None:
+def test_estimate_with_custom_params(estimable_circuit: Circuit) -> None:
     """Estimation with custom parameters should succeed."""
-    circ = Circuit()
-    q = circ.allocate(2)
-    circ.h(q[0]).cx(q[0], q[1])
-
     params: dict[str, Any] = {
         "qubitParams": {"name": "qubit_gate_ns_e3"},
     }
 
-    result = circ.estimate(params=params)
+    result = estimable_circuit.estimate(params=params)
     assert result is not None

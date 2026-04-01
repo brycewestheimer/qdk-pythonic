@@ -25,10 +25,10 @@ def test_build_to_qsharp_and_run(bell_circuit: Circuit) -> None:
 
 @pytest.mark.integration
 def test_build_and_estimate() -> None:
-    """Build circuit and run resource estimation."""
+    """Build circuit with T gates and run resource estimation."""
     circ = Circuit()
     q = circ.allocate(3)
-    circ.h(q[0]).cx(q[0], q[1]).cx(q[1], q[2]).measure_all()
+    circ.h(q[0]).t(q[0]).cx(q[0], q[1]).cx(q[1], q[2]).measure_all()
 
     result = circ.estimate()
     assert result is not None
