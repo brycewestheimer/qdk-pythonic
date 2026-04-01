@@ -507,9 +507,23 @@ class Circuit:
         config = RunConfig(shots=shots, **kwargs)
         return run_circuit(self, config)
 
-    def estimate(self, **kwargs: Any) -> Any:
-        """Run resource estimation on this circuit."""
-        raise NotImplementedError("estimate() is not yet implemented")
+    def estimate(self, params: dict[str, Any] | None = None, **kwargs: Any) -> Any:
+        """Run resource estimation on this circuit.
+
+        Args:
+            params: Optional estimator parameters (e.g. qubit model, QEC scheme).
+            **kwargs: Reserved for future use.
+
+        Returns:
+            The resource estimation result from qsharp.estimate.
+
+        Raises:
+            ExecutionError: If Q# compilation or estimation fails.
+            ImportError: If qsharp is not installed.
+        """
+        from qdk_pythonic.execution.estimator import estimate_circuit
+
+        return estimate_circuit(self, params=params)
 
     def depth(self) -> int:
         """Calculate the circuit depth."""
