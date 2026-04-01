@@ -507,3 +507,313 @@ def test_adjoint_noop_raises() -> None:
     circ.allocate(1)
     with pytest.raises(CircuitError, match="did not add one"):
         circ.adjoint(lambda: None)
+
+
+# ------------------------------------------------------------------
+# __repr__
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_repr_empty_circuit() -> None:
+    circ = Circuit()
+    assert repr(circ) == "Circuit(qubits=0, gates=0, measurements=0)"
+
+
+@pytest.mark.unit
+def test_repr_with_gates_and_measurements() -> None:
+    circ = Circuit()
+    q = circ.allocate(2)
+    circ.h(q[0]).cx(q[0], q[1]).measure_all()
+    assert repr(circ) == "Circuit(qubits=2, gates=2, measurements=2)"
+
+
+# ------------------------------------------------------------------
+# __eq__
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_eq_identical_circuits() -> None:
+    c1 = Circuit()
+    q1 = c1.allocate(2)
+    c1.h(q1[0]).cx(q1[0], q1[1])
+
+    c2 = Circuit()
+    q2 = c2.allocate(2)
+    c2.h(q2[0]).cx(q2[0], q2[1])
+
+    assert c1 == c2
+
+
+@pytest.mark.unit
+def test_eq_different_gate_types() -> None:
+    c1 = Circuit()
+    q1 = c1.allocate(1)
+    c1.h(q1[0])
+
+    c2 = Circuit()
+    q2 = c2.allocate(1)
+    c2.x(q2[0])
+
+    assert c1 != c2
+
+
+@pytest.mark.unit
+def test_eq_different_params() -> None:
+    c1 = Circuit()
+    q1 = c1.allocate(1)
+    c1.rx(0.5, q1[0])
+
+    c2 = Circuit()
+    q2 = c2.allocate(1)
+    c2.rx(0.6, q2[0])
+
+    assert c1 != c2
+
+
+@pytest.mark.unit
+def test_eq_different_topology() -> None:
+    c1 = Circuit()
+    q1 = c1.allocate(2)
+    c1.cx(q1[0], q1[1])
+
+    c2 = Circuit()
+    q2 = c2.allocate(2)
+    c2.cx(q2[1], q2[0])
+
+    assert c1 != c2
+
+
+@pytest.mark.unit
+def test_eq_ignores_labels() -> None:
+    c1 = Circuit()
+    c1.allocate(2, label="a")
+    c2 = Circuit()
+    c2.allocate(2, label="b")
+    assert c1 == c2
+
+
+@pytest.mark.unit
+def test_eq_non_circuit_returns_not_implemented() -> None:
+    circ = Circuit()
+    assert circ.__eq__("not a circuit") is NotImplemented
+
+
+@pytest.mark.unit
+def test_eq_different_qubit_count() -> None:
+    c1 = Circuit()
+    c1.allocate(2)
+    c2 = Circuit()
+    c2.allocate(3)
+    assert c1 != c2
+
+
+@pytest.mark.unit
+def test_eq_with_measurements() -> None:
+    c1 = Circuit()
+    q1 = c1.allocate(2)
+    c1.h(q1[0]).measure(q1[0])
+
+    c2 = Circuit()
+    q2 = c2.allocate(2)
+    c2.h(q2[0]).measure(q2[0])
+
+    assert c1 == c2
+
+
+@pytest.mark.unit
+def test_eq_with_raw_qsharp() -> None:
+    c1 = Circuit()
+    c1.raw_qsharp("let x = 1;")
+
+    c2 = Circuit()
+    c2.raw_qsharp("let x = 1;")
+
+    assert c1 == c2
+
+
+@pytest.mark.unit
+def test_eq_different_raw_qsharp() -> None:
+    c1 = Circuit()
+    c1.raw_qsharp("let x = 1;")
+
+    c2 = Circuit()
+    c2.raw_qsharp("let x = 2;")
+
+    assert c1 != c2
+
+
+# ------------------------------------------------------------------
+# total_gate_count
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_total_gate_count_empty() -> None:
+    circ = Circuit()
+    assert circ.total_gate_count() == 0
+
+
+@pytest.mark.unit
+def test_total_gate_count_bell_state() -> None:
+    circ = Circuit()
+    q = circ.allocate(2)
+    circ.h(q[0]).cx(q[0], q[1])
+    assert circ.total_gate_count() == 2
+
+
+@pytest.mark.unit
+def test_total_gate_count_ignores_measurements() -> None:
+    circ = Circuit()
+    q = circ.allocate(2)
+    circ.h(q[0]).cx(q[0], q[1]).measure_all()
+    assert circ.total_gate_count() == 2
+
+
+# ------------------------------------------------------------------
+# without_measurements deep copy safety
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_without_measurements_does_not_share_registers() -> None:
+    circ = Circuit()
+    circ.allocate(2)
+    circ.allocate(3)
+    filtered = circ.without_measurements()
+    # Verify the register objects are distinct
+    for orig, copied in zip(circ.registers, filtered.registers):
+        assert orig is not copied
+
+
+# ------------------------------------------------------------------
+# without_measurements_and_raw
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_without_measurements_and_raw_filters_both() -> None:
+    circ = Circuit()
+    q = circ.allocate(2)
+    circ.h(q[0]).raw_qsharp("M(q[0]);").measure(q[0])
+    filtered = circ.without_measurements_and_raw()
+    assert len(filtered.instructions) == 1
+    assert isinstance(filtered.instructions[0], Instruction)
+
+
+@pytest.mark.unit
+def test_without_measurements_and_raw_preserves_original() -> None:
+    circ = Circuit()
+    q = circ.allocate(1)
+    circ.h(q[0]).raw_qsharp("let x = 1;").measure(q[0])
+    original_count = len(circ.instructions)
+    circ.without_measurements_and_raw()
+    assert len(circ.instructions) == original_count
+
+
+# ------------------------------------------------------------------
+# __add__ composition
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_add_combines_circuits() -> None:
+    c1 = Circuit()
+    q1 = c1.allocate(2)
+    c1.h(q1[0])
+
+    c2 = Circuit()
+    q2 = c2.allocate(2)
+    c2.x(q2[0])
+
+    result = c1 + c2
+    assert result.qubit_count() == 4
+    assert result.total_gate_count() == 2
+
+
+@pytest.mark.unit
+def test_add_preserves_instruction_order() -> None:
+    c1 = Circuit()
+    q1 = c1.allocate(1)
+    c1.h(q1[0])
+
+    c2 = Circuit()
+    q2 = c2.allocate(1)
+    c2.x(q2[0])
+
+    result = c1 + c2
+    insts = result.instructions
+    assert isinstance(insts[0], Instruction) and insts[0].gate is H
+    assert isinstance(insts[1], Instruction) and insts[1].gate is X
+
+
+@pytest.mark.unit
+def test_add_remaps_qubit_indices() -> None:
+    c1 = Circuit()
+    q1 = c1.allocate(2)
+    c1.cx(q1[0], q1[1])
+
+    c2 = Circuit()
+    q2 = c2.allocate(2)
+    c2.cx(q2[0], q2[1])
+
+    result = c1 + c2
+    insts = result.instructions
+    assert isinstance(insts[0], Instruction)
+    assert isinstance(insts[1], Instruction)
+    # First circuit's qubits: 0, 1. Second circuit's qubits: 2, 3.
+    assert tuple(q.index for q in insts[0].targets) == (0, 1)
+    assert tuple(q.index for q in insts[1].targets) == (2, 3)
+
+
+@pytest.mark.unit
+def test_add_with_measurements() -> None:
+    c1 = Circuit()
+    q1 = c1.allocate(1)
+    c1.h(q1[0]).measure(q1[0])
+
+    c2 = Circuit()
+    q2 = c2.allocate(1)
+    c2.x(q2[0])
+
+    result = c1 + c2
+    assert result.qubit_count() == 2
+    assert len(result.instructions) == 3
+
+
+@pytest.mark.unit
+def test_add_raw_qsharp_raises() -> None:
+    c1 = Circuit()
+    c1.raw_qsharp("let x = 1;")
+
+    c2 = Circuit()
+    c2.allocate(1)
+
+    with pytest.raises(CircuitError, match="raw Q#"):
+        c1 + c2
+
+
+@pytest.mark.unit
+def test_add_non_circuit_returns_not_implemented() -> None:
+    circ = Circuit()
+    assert circ.__add__("nope") is NotImplemented
+
+
+@pytest.mark.unit
+def test_add_three_way_composition() -> None:
+    c1 = Circuit()
+    q1 = c1.allocate(1)
+    c1.h(q1[0])
+
+    c2 = Circuit()
+    q2 = c2.allocate(1)
+    c2.x(q2[0])
+
+    c3 = Circuit()
+    q3 = c3.allocate(1)
+    c3.z(q3[0])
+
+    result = c1 + c2 + c3
+    assert result.qubit_count() == 3
+    assert result.total_gate_count() == 3

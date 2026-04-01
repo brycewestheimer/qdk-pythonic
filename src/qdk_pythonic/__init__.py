@@ -10,6 +10,7 @@ from qdk_pythonic.builders import (
     w_state,
 )
 from qdk_pythonic.core.circuit import Circuit
+from qdk_pythonic.core.protocols import CircuitProducer
 from qdk_pythonic.exceptions import (
     CircuitError,
     CodegenError,
@@ -22,6 +23,7 @@ from qdk_pythonic.exceptions import (
 __all__ = [
     "Circuit",
     "CircuitError",
+    "CircuitProducer",
     "CodegenError",
     "ExecutionError",
     "ParserError",

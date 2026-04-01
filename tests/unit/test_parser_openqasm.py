@@ -425,3 +425,24 @@ rx(foo) q[0];
 """
     with pytest.raises(ParserError):
         OpenQASMParser().parse(source)
+
+
+# ------------------------------------------------------------------
+# Reset statement
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_reset_statement_skipped() -> None:
+    source = """OPENQASM 3.0;
+include "stdgates.inc";
+
+qubit[2] q;
+
+reset q[0];
+h q[0];
+cx q[0], q[1];
+"""
+    circ = OpenQASMParser().parse(source)
+    # reset is silently skipped; only h and cx remain
+    assert len([i for i in circ.instructions if isinstance(i, Instruction)]) == 2

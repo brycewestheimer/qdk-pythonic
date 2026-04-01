@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import warnings
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -134,6 +135,31 @@ class TestEstimateCircuit:
             with pytest.raises(ExecutionError) as exc_info:
                 estimate_circuit(circ)
             assert exc_info.value.__cause__ is cause
+
+    def test_raw_qsharp_stripped_from_estimation(self) -> None:
+        from qdk_pythonic.execution.estimator import estimate_circuit
+
+        circ = Circuit()
+        q = circ.allocate(2)
+        circ.h(q[0]).raw_qsharp("M(q[0]);").cx(q[0], q[1])
+
+        fake_qsharp = MagicMock()
+        fake_qsharp.estimate.return_value = {"physicalQubits": 42}
+
+        captured_code: list[str] = []
+        fake_qsharp.eval.side_effect = lambda code: captured_code.append(code)
+
+        with patch.dict(sys.modules, {"qsharp": fake_qsharp}):
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                estimate_circuit(circ)
+                assert len(w) == 1
+                assert "raw Q# fragment" in str(w[0].message)
+
+        code = captured_code[0]
+        assert "M(q[0])" not in code
+        assert "H(" in code
+        assert "CNOT(" in code
 
     def test_import_error_when_qsharp_missing(self) -> None:
         from qdk_pythonic.execution.estimator import estimate_circuit

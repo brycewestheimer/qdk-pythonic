@@ -49,8 +49,12 @@ def run_circuit(circuit: Circuit, config: RunConfig | None = None) -> list[Any]:
             f"Generated Q#:\n{qsharp_code}"
         ) from e
 
+    run_kwargs: dict[str, Any] = {"shots": config.shots}
+    if config.seed is not None:
+        run_kwargs["seed"] = config.seed
+
     try:
-        results = qsharp.run(f"{op_name}()", shots=config.shots)
+        results = qsharp.run(f"{op_name}()", **run_kwargs)
     except Exception as e:
         raise ExecutionError(f"Simulation failed for '{op_name}': {e}") from e
 

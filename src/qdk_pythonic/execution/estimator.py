@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+import warnings
 from typing import TYPE_CHECKING, Any
 
 from qdk_pythonic.exceptions import ExecutionError
@@ -13,10 +14,11 @@ if TYPE_CHECKING:
 
 
 def _build_estimation_code(circuit: Circuit, op_name: str) -> str:
-    """Generate Q# code for estimation, stripping measurements.
+    """Generate Q# code for estimation, stripping measurements and raw Q#.
 
     The resource estimator requires Unit-returning operations, so all
-    measurements are filtered out before code generation.
+    measurements and raw Q# fragments are filtered out before code
+    generation.
 
     Args:
         circuit: The circuit to generate code for.
@@ -26,8 +28,20 @@ def _build_estimation_code(circuit: Circuit, op_name: str) -> str:
         A Q# operation definition string (Unit return type).
     """
     from qdk_pythonic.codegen.qsharp import QSharpCodeGenerator
+    from qdk_pythonic.core.instruction import RawQSharp
 
-    filtered_circuit = circuit.without_measurements()
+    raw_count = sum(
+        1 for i in circuit.instructions if isinstance(i, RawQSharp)
+    )
+    if raw_count > 0:
+        warnings.warn(
+            f"Stripped {raw_count} raw Q# fragment(s) from estimation "
+            "code. Raw fragments may contain measurements or return "
+            "statements incompatible with the resource estimator.",
+            stacklevel=3,
+        )
+
+    filtered_circuit = circuit.without_measurements_and_raw()
     generator = QSharpCodeGenerator()
     return generator.generate_operation(op_name, filtered_circuit)
 

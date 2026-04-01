@@ -37,6 +37,34 @@ class TestRunConfig:
         with pytest.raises(AttributeError):
             cfg.shots = 5  # type: ignore[misc]
 
+    def test_seed_default_none(self) -> None:
+        cfg = RunConfig()
+        assert cfg.seed is None
+
+    def test_seed_valid(self) -> None:
+        cfg = RunConfig(seed=42)
+        assert cfg.seed == 42
+
+    def test_seed_negative_raises(self) -> None:
+        with pytest.raises(ValueError, match="seed must be non-negative"):
+            RunConfig(seed=-1)
+
+    def test_noise_default_none(self) -> None:
+        cfg = RunConfig()
+        assert cfg.noise is None
+
+    def test_noise_valid(self) -> None:
+        cfg = RunConfig(noise=(0.01, 0.02, 0.03))
+        assert cfg.noise == (0.01, 0.02, 0.03)
+
+    def test_noise_invalid_probability_raises(self) -> None:
+        with pytest.raises(ValueError, match="noise probabilities"):
+            RunConfig(noise=(0.5, 1.5, 0.0))
+
+    def test_noise_negative_raises(self) -> None:
+        with pytest.raises(ValueError, match="noise probabilities"):
+            RunConfig(noise=(-0.1, 0.0, 0.0))
+
 
 @pytest.mark.unit
 class TestImportQsharp:

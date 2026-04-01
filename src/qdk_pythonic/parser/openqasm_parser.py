@@ -351,7 +351,7 @@ class OpenQASMParser:
             gate_name = m.group(1)
             qubits_str = m.group(2)
             # Skip keywords that look like gate calls
-            if gate_name in ("measure", "bit", "qubit", "include"):
+            if gate_name in ("measure", "bit", "qubit", "include", "reset"):
                 return
             gate_def, method = self._get_gate_method(gate_name, circuit)
             qubits = self._resolve_qubits(qubits_str, qubit_map)

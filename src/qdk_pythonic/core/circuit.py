@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import math
 from collections.abc import Callable
 from typing import Any
 
@@ -50,6 +51,52 @@ class Circuit:
         self._next_qubit_index: int = 0
         self._used_labels: set[str] = set()
         self._register_counter: int = 0
+
+    def __repr__(self) -> str:
+        n_q = self.qubit_count()
+        n_g = self.total_gate_count()
+        n_m = sum(1 for i in self._instructions if isinstance(i, Measurement))
+        return f"Circuit(qubits={n_q}, gates={n_g}, measurements={n_m})"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Circuit):
+            return NotImplemented
+        if self.qubit_count() != other.qubit_count():
+            return False
+        if len(self._instructions) != len(other._instructions):
+            return False
+        for i1, i2 in zip(self._instructions, other._instructions):
+            if type(i1) is not type(i2):
+                return False
+            if isinstance(i1, Instruction) and isinstance(i2, Instruction):
+                if i1.gate.name != i2.gate.name:
+                    return False
+                if len(i1.params) != len(i2.params):
+                    return False
+                if not all(
+                    math.isclose(p1, p2, rel_tol=1e-9, abs_tol=1e-12)
+                    for p1, p2 in zip(i1.params, i2.params)
+                ):
+                    return False
+                if (
+                    tuple(q.index for q in i1.targets)
+                    != tuple(q.index for q in i2.targets)
+                ):
+                    return False
+                if (
+                    tuple(q.index for q in i1.controls)
+                    != tuple(q.index for q in i2.controls)
+                ):
+                    return False
+                if i1.is_adjoint != i2.is_adjoint:
+                    return False
+            elif isinstance(i1, Measurement) and isinstance(i2, Measurement):
+                if i1.target.index != i2.target.index:
+                    return False
+            elif isinstance(i1, RawQSharp) and isinstance(i2, RawQSharp):
+                if i1.code != i2.code:
+                    return False
+        return True
 
     # ------------------------------------------------------------------
     # Qubit allocation
@@ -166,8 +213,21 @@ class Circuit:
         self._instructions.append(inst)
         return self
 
+    def _copy_structure(self) -> Circuit:
+        """Create a structural copy of this circuit without instructions."""
+        copy = Circuit.__new__(Circuit)
+        copy._instructions = []
+        copy._qubits = list(self._qubits)
+        copy._registers = [
+            QubitRegister(list(r._qubits), r.label) for r in self._registers
+        ]
+        copy._next_qubit_index = self._next_qubit_index
+        copy._used_labels = set(self._used_labels)
+        copy._register_counter = self._register_counter
+        return copy
+
     def without_measurements(self) -> Circuit:
-        """Return a shallow copy with all measurements removed.
+        """Return a copy with all measurements removed.
 
         Qubit allocations and gate instructions are preserved; only
         ``Measurement`` entries are filtered out.
@@ -175,15 +235,26 @@ class Circuit:
         Returns:
             A new Circuit without measurement instructions.
         """
-        copy = Circuit.__new__(Circuit)
+        copy = self._copy_structure()
         copy._instructions = [
             i for i in self._instructions if not isinstance(i, Measurement)
         ]
-        copy._qubits = list(self._qubits)
-        copy._registers = list(self._registers)
-        copy._next_qubit_index = self._next_qubit_index
-        copy._used_labels = set(self._used_labels)
-        copy._register_counter = self._register_counter
+        return copy
+
+    def without_measurements_and_raw(self) -> Circuit:
+        """Return a copy with measurements and raw Q# fragments removed.
+
+        Used by the resource estimator, which requires Unit-returning
+        operations with no opaque Q# fragments.
+
+        Returns:
+            A new Circuit without Measurement or RawQSharp instructions.
+        """
+        copy = self._copy_structure()
+        copy._instructions = [
+            i for i in self._instructions
+            if not isinstance(i, (Measurement, RawQSharp))
+        ]
         return copy
 
     # ------------------------------------------------------------------
@@ -574,11 +645,20 @@ class Circuit:
 
         return OpenQASMCodeGenerator().generate(self)
 
-    def run(self, shots: int = 1000) -> list[Any]:
+    def run(
+        self,
+        shots: int = 1000,
+        *,
+        seed: int | None = None,
+        noise: tuple[float, float, float] | None = None,
+    ) -> list[Any]:
         """Execute this circuit on the qsharp simulator.
 
         Args:
             shots: Number of simulation shots. Defaults to 1000.
+            seed: Optional RNG seed for reproducible simulation.
+            noise: Optional noise parameters as (depolarizing, dephasing,
+                bitflip) probabilities.
 
         Returns:
             A list of measurement results, one per shot.
@@ -590,7 +670,7 @@ class Circuit:
         from qdk_pythonic.execution.config import RunConfig
         from qdk_pythonic.execution.runner import run_circuit
 
-        config = RunConfig(shots=shots)
+        config = RunConfig(shots=shots, seed=seed, noise=noise)
         return run_circuit(self, config)
 
     def estimate(self, params: dict[str, Any] | None = None, **kwargs: Any) -> Any:
@@ -626,6 +706,14 @@ class Circuit:
         from qdk_pythonic.analysis.metrics import compute_gate_count
 
         return compute_gate_count(self._instructions)
+
+    def total_gate_count(self) -> int:
+        """Return the total number of gate instructions.
+
+        Returns:
+            The sum of all per-gate-type counts.
+        """
+        return sum(self.gate_count().values())
 
     def draw(self) -> str:
         """Draw an ASCII representation of the circuit.
@@ -732,3 +820,71 @@ class Circuit:
         from qdk_pythonic.parser.openqasm_parser import OpenQASMParser
 
         return OpenQASMParser().parse(source)
+
+    # ------------------------------------------------------------------
+    # Circuit composition
+    # ------------------------------------------------------------------
+
+    def _remap_into(self, target: Circuit) -> dict[int, Qubit]:
+        """Allocate matching registers in *target* and return qubit map."""
+        qubit_map: dict[int, Qubit] = {}
+        for reg in self._registers:
+            new_reg = target.allocate(len(reg))
+            for old_q, new_q in zip(reg, new_reg):
+                qubit_map[old_q.index] = new_q
+        return qubit_map
+
+    def __add__(self, other: object) -> Circuit:
+        """Concatenate two circuits into a new circuit.
+
+        Qubits from both operands are remapped to fresh allocations in
+        the result. Instruction order is preserved (self first, then
+        other).
+
+        Args:
+            other: The circuit to append.
+
+        Returns:
+            A new Circuit with the combined instructions.
+
+        Raises:
+            CircuitError: If either circuit contains RawQSharp instructions.
+        """
+        if not isinstance(other, Circuit):
+            return NotImplemented
+
+        for label, circ in [("left", self), ("right", other)]:
+            if any(isinstance(i, RawQSharp) for i in circ._instructions):
+                raise CircuitError(
+                    f"Cannot compose circuits containing raw Q# "
+                    f"fragments ({label} operand has RawQSharp "
+                    f"instructions)"
+                )
+
+        result = Circuit()
+        self_map = self._remap_into(result)
+        other_map = other._remap_into(result)
+
+        for inst in self._instructions:
+            result._instructions.append(_remap_instruction(inst, self_map))
+        for inst in other._instructions:
+            result._instructions.append(_remap_instruction(inst, other_map))
+
+        return result
+
+
+def _remap_instruction(
+    inst: InstructionLike, qubit_map: dict[int, Qubit],
+) -> InstructionLike:
+    """Remap qubit references in an instruction using *qubit_map*."""
+    if isinstance(inst, Instruction):
+        new_targets = tuple(qubit_map[q.index] for q in inst.targets)
+        new_controls = tuple(qubit_map[q.index] for q in inst.controls)
+        return dataclasses.replace(
+            inst, targets=new_targets, controls=new_controls,
+        )
+    if isinstance(inst, Measurement):
+        return Measurement(
+            target=qubit_map[inst.target.index], label=inst.label,
+        )
+    return inst
