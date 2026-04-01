@@ -33,6 +33,33 @@ estimation.
 
 .. toctree::
    :maxdepth: 2
+   :caption: User Guide
+
+   user_guide/overview
+   user_guide/circuits
+   user_guide/parameters
+   user_guide/codegen
+   user_guide/execution
+   user_guide/domains
+   user_guide/analysis
+   user_guide/interop
+   user_guide/errors
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Developer Guide
+
+   developer_guide/setup
+   developer_guide/architecture
+   developer_guide/adding_gates
+   developer_guide/adding_domains
+   developer_guide/codegen_backend
+   developer_guide/parser_backend
+   developer_guide/testing
+   developer_guide/style
+
+.. toctree::
+   :maxdepth: 2
    :caption: API Reference
 
    api/circuit
