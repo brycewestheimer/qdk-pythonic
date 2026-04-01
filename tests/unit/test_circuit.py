@@ -5,11 +5,10 @@ import math
 import pytest
 
 from qdk_pythonic.core.circuit import Circuit
-from qdk_pythonic.core.gates import CCNOT, CNOT, CZ, H, R1, RX, RY, RZ, S, SWAP, T, X, Y, Z
+from qdk_pythonic.core.gates import CCNOT, CNOT, CZ, R1, RX, RY, RZ, SWAP, H, S, T, X, Y, Z
 from qdk_pythonic.core.instruction import Instruction, Measurement, RawQSharp
 from qdk_pythonic.core.qubit import Qubit, QubitRegister
 from qdk_pythonic.exceptions import CircuitError
-
 
 # ------------------------------------------------------------------
 # Allocation
@@ -421,3 +420,115 @@ def test_registers_property_returns_copy() -> None:
     assert isinstance(regs[0], QubitRegister)
     regs.clear()
     assert len(circ.registers) == 2
+
+
+# ------------------------------------------------------------------
+# Qubit ownership by circuit provenance (Issue 1)
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_qubit_from_other_circuit_rejected() -> None:
+    c1 = Circuit()
+    c1.allocate(2)
+    c2 = Circuit()
+    q2 = c2.allocate(1)
+    with pytest.raises(CircuitError, match="not owned"):
+        c1.h(q2[0])
+
+
+# ------------------------------------------------------------------
+# Qubit distinctness (Issue 4)
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_cx_same_qubit_raises() -> None:
+    circ = Circuit()
+    q = circ.allocate(2)
+    with pytest.raises(CircuitError, match="distinct"):
+        circ.cx(q[0], q[0])
+
+
+@pytest.mark.unit
+def test_swap_same_qubit_raises() -> None:
+    circ = Circuit()
+    q = circ.allocate(2)
+    with pytest.raises(CircuitError, match="distinct"):
+        circ.swap(q[0], q[0])
+
+
+@pytest.mark.unit
+def test_ccx_duplicate_qubit_raises() -> None:
+    circ = Circuit()
+    q = circ.allocate(3)
+    with pytest.raises(CircuitError, match="distinct"):
+        circ.ccx(q[0], q[0], q[1])
+
+
+@pytest.mark.unit
+def test_controlled_target_equals_control_raises() -> None:
+    circ = Circuit()
+    q = circ.allocate(2)
+    with pytest.raises(CircuitError, match="distinct"):
+        circ.controlled(circ.x, [q[0]], q[0])
+
+
+# ------------------------------------------------------------------
+# Namespace-safe allocation (Issue 2)
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_allocate_duplicate_label_raises() -> None:
+    circ = Circuit()
+    circ.allocate(2, label="r")
+    with pytest.raises(CircuitError, match="Duplicate register label"):
+        circ.allocate(2, label="r")
+
+
+@pytest.mark.unit
+def test_allocate_unlabeled_unique_labels() -> None:
+    circ = Circuit()
+    r1 = circ.allocate(2)
+    r2 = circ.allocate(3)
+    assert r1.label is not None
+    assert r2.label is not None
+    assert r1.label != r2.label
+
+
+# ------------------------------------------------------------------
+# controlled() / adjoint() safety (Issue 3)
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_controlled_measure_raises() -> None:
+    circ = Circuit()
+    q = circ.allocate(2)
+    with pytest.raises(CircuitError, match="gate instructions"):
+        circ.controlled(circ.measure, [q[0]], q[1])
+
+
+@pytest.mark.unit
+def test_adjoint_measure_raises() -> None:
+    circ = Circuit()
+    q = circ.allocate(1)
+    with pytest.raises(CircuitError, match="gate instructions"):
+        circ.adjoint(circ.measure, q[0])
+
+
+@pytest.mark.unit
+def test_controlled_noop_raises() -> None:
+    circ = Circuit()
+    q = circ.allocate(1)
+    with pytest.raises(CircuitError, match="did not add one"):
+        circ.controlled(lambda: None, [q[0]])
+
+
+@pytest.mark.unit
+def test_adjoint_noop_raises() -> None:
+    circ = Circuit()
+    circ.allocate(1)
+    with pytest.raises(CircuitError, match="did not add one"):
+        circ.adjoint(lambda: None)

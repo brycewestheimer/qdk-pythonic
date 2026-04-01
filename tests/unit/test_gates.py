@@ -7,18 +7,17 @@ from qdk_pythonic.core.gates import (
     CNOT,
     CZ,
     GATE_CATALOG,
-    H,
     R1,
     RX,
     RY,
     RZ,
-    S,
     SWAP,
+    H,
+    S,
     T,
     X,
     Y,
     Z,
-    GateDefinition,
 )
 
 

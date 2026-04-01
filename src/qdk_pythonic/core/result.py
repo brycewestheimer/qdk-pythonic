@@ -14,7 +14,9 @@ class MeasurementResult:
     Attributes:
         qubit: The qubit that was measured.
         label: An optional label for this result.
+        value: The classical outcome (0 or 1), or None if not yet measured.
     """
 
     qubit: Qubit
     label: str | None = None
+    value: int | None = None

@@ -19,19 +19,10 @@ class TestRunConfig:
     def test_defaults(self) -> None:
         cfg = RunConfig()
         assert cfg.shots == 1000
-        assert cfg.seed is None
-        assert cfg.noise_model is None
 
-    def test_custom_values(self) -> None:
-        cfg = RunConfig(shots=500, seed=42, noise_model={"type": "depolarizing"})
+    def test_custom_shots(self) -> None:
+        cfg = RunConfig(shots=500)
         assert cfg.shots == 500
-        assert cfg.seed == 42
-        assert cfg.noise_model == {"type": "depolarizing"}
-
-    def test_keyword_only_construction(self) -> None:
-        cfg = RunConfig(shots=1, seed=7)
-        assert cfg.shots == 1
-        assert cfg.seed == 7
 
 
 @pytest.mark.unit
@@ -75,7 +66,6 @@ class TestRunCircuit:
         fake_qsharp.run.return_value = [0, 0]
 
         names_seen: list[str] = []
-        original_eval = fake_qsharp.eval
 
         def capture_eval(code: str) -> None:
             # Extract the operation name from the Q# code

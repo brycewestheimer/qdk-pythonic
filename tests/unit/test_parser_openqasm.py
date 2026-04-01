@@ -11,13 +11,13 @@ from qdk_pythonic.core.gates import (
     CCNOT,
     CNOT,
     CZ,
-    H,
     R1,
     RX,
     RY,
     RZ,
-    S,
     SWAP,
+    H,
+    S,
     T,
     X,
     Y,
@@ -380,3 +380,48 @@ ctrl @ rx(1.5707) q[0], q[1];
     assert gates[0].gate is RX
     assert len(gates[0].controls) == 1
     assert math.isclose(gates[0].params[0], 1.5707, rel_tol=1e-9)
+
+
+@pytest.mark.unit
+def test_rx_with_pi_expression() -> None:
+    source = """OPENQASM 3.0;
+include "stdgates.inc";
+
+qubit[1] q;
+
+rx(pi/2) q[0];
+"""
+    circ = OpenQASMParser().parse(source)
+    gates = _gate_instructions(circ)
+    assert len(gates) == 1
+    assert gates[0].gate is RX
+    assert math.isclose(gates[0].params[0], math.pi / 2.0, rel_tol=1e-9)
+
+
+@pytest.mark.unit
+def test_rx_with_pi_times_constant() -> None:
+    source = """OPENQASM 3.0;
+include "stdgates.inc";
+
+qubit[1] q;
+
+rx(2*pi) q[0];
+"""
+    circ = OpenQASMParser().parse(source)
+    gates = _gate_instructions(circ)
+    assert len(gates) == 1
+    assert gates[0].gate is RX
+    assert math.isclose(gates[0].params[0], 2 * math.pi, rel_tol=1e-9)
+
+
+@pytest.mark.unit
+def test_invalid_param_raises_parser_error() -> None:
+    source = """OPENQASM 3.0;
+include "stdgates.inc";
+
+qubit[1] q;
+
+rx(foo) q[0];
+"""
+    with pytest.raises(ParserError):
+        OpenQASMParser().parse(source)

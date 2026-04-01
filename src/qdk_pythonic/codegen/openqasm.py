@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from qdk_pythonic.core.instruction import Instruction, Measurement, RawQSharp
+from qdk_pythonic.exceptions import CodegenError
 
 if TYPE_CHECKING:
     from qdk_pythonic.core.circuit import Circuit
@@ -50,7 +51,10 @@ class OpenQASMCodeGenerator:
             elif isinstance(inst, Measurement):
                 measurements.append(inst)
             elif isinstance(inst, RawQSharp):
-                gate_lines.append("// [raw Q# fragment omitted]")
+                raise CodegenError(
+                    "Cannot export raw Q# fragment to OpenQASM. "
+                    "Remove raw_qsharp() calls or use to_qsharp() instead."
+                )
 
         if gate_lines:
             lines.append("")

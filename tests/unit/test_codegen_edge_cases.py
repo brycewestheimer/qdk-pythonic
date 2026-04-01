@@ -9,7 +9,6 @@ from qdk_pythonic.codegen.qsharp import QSharpCodeGenerator
 from qdk_pythonic.core.circuit import Circuit
 from qdk_pythonic.exceptions import CodegenError
 
-
 # ------------------------------------------------------------------
 # 1. Empty circuit (both generators)
 # ------------------------------------------------------------------
@@ -128,23 +127,21 @@ def test_mixed_raw_qsharp_with_gates() -> None:
     result = QSharpCodeGenerator().generate(circ)
     lines = result.split("\n")
     # Find gate and raw lines
-    h_idx = next(i for i, l in enumerate(lines) if "H(q[0])" in l)
-    raw_idx = next(i for i, l in enumerate(lines) if "let x = 42;" in l)
-    x_idx = next(i for i, l in enumerate(lines) if "X(q[0])" in l)
+    h_idx = next(i for i, line in enumerate(lines) if "H(q[0])" in line)
+    raw_idx = next(i for i, line in enumerate(lines) if "let x = 42;" in line)
+    x_idx = next(i for i, line in enumerate(lines) if "X(q[0])" in line)
     assert h_idx < raw_idx < x_idx
 
 
 @pytest.mark.unit
-def test_mixed_raw_qsharp_openqasm_becomes_comment() -> None:
+def test_mixed_raw_qsharp_openqasm_raises_codegen_error() -> None:
     circ = Circuit()
     q = circ.allocate(1)
     circ.h(q[0])
     circ.raw_qsharp("let x = 42;")
     circ.x(q[0])
-    result = OpenQASMCodeGenerator().generate(circ)
-    assert "// [raw Q# fragment omitted]" in result
-    assert "h q[0];" in result
-    assert "x q[0];" in result
+    with pytest.raises(CodegenError, match="Cannot export raw Q#"):
+        OpenQASMCodeGenerator().generate(circ)
 
 
 # ------------------------------------------------------------------

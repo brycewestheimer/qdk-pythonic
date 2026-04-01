@@ -48,6 +48,8 @@ class Circuit:
         self._qubits: list[Qubit] = []
         self._registers: list[QubitRegister] = []
         self._next_qubit_index: int = 0
+        self._used_labels: set[str] = set()
+        self._register_counter: int = 0
 
     # ------------------------------------------------------------------
     # Qubit allocation
@@ -69,10 +71,28 @@ class Circuit:
         if n < 1:
             raise CircuitError(f"Cannot allocate {n} qubits; n must be >= 1")
 
+        if label is not None:
+            if label in self._used_labels:
+                raise CircuitError(f"Duplicate register label: {label!r}")
+        else:
+            # Auto-assign a unique label: first unlabeled gets "q", then "q1", ...
+            if "q" not in self._used_labels:
+                label = "q"
+            else:
+                while f"q{self._register_counter}" in self._used_labels:
+                    self._register_counter += 1
+                label = f"q{self._register_counter}"
+                self._register_counter += 1
+        self._used_labels.add(label)
+
         qubits: list[Qubit] = []
         for i in range(n):
-            qubit_label = f"{label}_{i}" if label else f"q_{self._next_qubit_index}"
-            qubit = Qubit(index=self._next_qubit_index, label=qubit_label)
+            qubit_label = f"{label}_{i}"
+            qubit = Qubit(
+                index=self._next_qubit_index,
+                label=qubit_label,
+                _circuit_id=id(self),
+            )
             qubits.append(qubit)
             self._next_qubit_index += 1
 
@@ -115,6 +135,10 @@ class Circuit:
             CircuitError: If arity or ownership checks fail.
         """
         self._validate_qubits_owned(targets)
+        if len(targets) > 1 and len({q.index for q in targets}) != len(targets):
+            raise CircuitError(
+                f"Gate {gate.name} requires distinct target qubits"
+            )
         if len(targets) != gate.num_qubits:
             raise CircuitError(
                 f"Gate {gate.name} expects {gate.num_qubits} qubits, got {len(targets)}"
@@ -339,14 +363,32 @@ class Circuit:
         count_before = len(self._instructions)
         gate_fn(*args, **kwargs)
 
-        if len(self._instructions) > count_before:
-            last = self._instructions[-1]
-            if isinstance(last, Instruction):
-                patched = dataclasses.replace(
-                    last, controls=last.controls + tuple(controls)
-                )
-                self._instructions[-1] = patched
+        if len(self._instructions) <= count_before:
+            raise CircuitError(
+                "controlled() requires a gate instruction, but the callable "
+                "did not add one"
+            )
 
+        last = self._instructions[-1]
+        if not isinstance(last, Instruction):
+            self._instructions.pop()
+            raise CircuitError(
+                "controlled() can only wrap gate instructions, not "
+                f"{type(last).__name__}"
+            )
+
+        control_indices = {q.index for q in controls}
+        target_indices = {q.index for q in last.targets}
+        if control_indices & target_indices:
+            self._instructions.pop()
+            raise CircuitError(
+                "Control qubits must be distinct from target qubits"
+            )
+
+        patched = dataclasses.replace(
+            last, controls=last.controls + tuple(controls)
+        )
+        self._instructions[-1] = patched
         return self
 
     def adjoint(
@@ -370,12 +412,22 @@ class Circuit:
         count_before = len(self._instructions)
         gate_fn(*args, **kwargs)
 
-        if len(self._instructions) > count_before:
-            last = self._instructions[-1]
-            if isinstance(last, Instruction):
-                patched = dataclasses.replace(last, is_adjoint=True)
-                self._instructions[-1] = patched
+        if len(self._instructions) <= count_before:
+            raise CircuitError(
+                "adjoint() requires a gate instruction, but the callable "
+                "did not add one"
+            )
 
+        last = self._instructions[-1]
+        if not isinstance(last, Instruction):
+            self._instructions.pop()
+            raise CircuitError(
+                "adjoint() can only wrap gate instructions, not "
+                f"{type(last).__name__}"
+            )
+
+        patched = dataclasses.replace(last, is_adjoint=True)
+        self._instructions[-1] = patched
         return self
 
     # ------------------------------------------------------------------
@@ -487,12 +539,11 @@ class Circuit:
 
         return OpenQASMCodeGenerator().generate(self)
 
-    def run(self, shots: int = 1000, **kwargs: Any) -> list[Any]:
+    def run(self, shots: int = 1000) -> list[Any]:
         """Execute this circuit on the qsharp simulator.
 
         Args:
             shots: Number of simulation shots. Defaults to 1000.
-            **kwargs: Additional keyword arguments forwarded to ``RunConfig``.
 
         Returns:
             A list of measurement results, one per shot.
@@ -504,7 +555,7 @@ class Circuit:
         from qdk_pythonic.execution.config import RunConfig
         from qdk_pythonic.execution.runner import run_circuit
 
-        config = RunConfig(shots=shots, **kwargs)
+        config = RunConfig(shots=shots)
         return run_circuit(self, config)
 
     def estimate(self, params: dict[str, Any] | None = None, **kwargs: Any) -> Any:

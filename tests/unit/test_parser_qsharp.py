@@ -11,13 +11,13 @@ from qdk_pythonic.core.gates import (
     CCNOT,
     CNOT,
     CZ,
-    H,
     R1,
     RX,
     RY,
     RZ,
-    S,
     SWAP,
+    H,
+    S,
     T,
     X,
     Y,
@@ -388,3 +388,45 @@ def test_controlled_rx() -> None:
     assert gates[0].gate is RX
     assert len(gates[0].controls) == 1
     assert math.isclose(gates[0].params[0], 1.5707, rel_tol=1e-9)
+
+
+@pytest.mark.unit
+def test_rx_with_pi_expression() -> None:
+    source = """
+{
+    use q = Qubit[1];
+    Rx(PI() / 2.0, q[0]);
+}
+"""
+    circ = QSharpParser().parse(source)
+    gates = _gate_instructions(circ)
+    assert len(gates) == 1
+    assert gates[0].gate is RX
+    assert math.isclose(gates[0].params[0], math.pi / 2.0, rel_tol=1e-9)
+
+
+@pytest.mark.unit
+def test_rx_with_std_math_pi() -> None:
+    source = """
+{
+    use q = Qubit[1];
+    Rx(Std.Math.PI() / 4.0, q[0]);
+}
+"""
+    circ = QSharpParser().parse(source)
+    gates = _gate_instructions(circ)
+    assert len(gates) == 1
+    assert gates[0].gate is RX
+    assert math.isclose(gates[0].params[0], math.pi / 4.0, rel_tol=1e-9)
+
+
+@pytest.mark.unit
+def test_unrecognized_statement_raises() -> None:
+    source = """
+{
+    use q = Qubit[1];
+    SomeWeirdThing;
+}
+"""
+    with pytest.raises(ParserError, match="Unrecognized Q# statement"):
+        QSharpParser().parse(source)

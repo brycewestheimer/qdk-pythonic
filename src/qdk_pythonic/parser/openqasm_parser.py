@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 from collections.abc import Callable
 from typing import Any
@@ -11,6 +12,11 @@ from qdk_pythonic.core.gates import GATE_CATALOG, GateDefinition
 from qdk_pythonic.core.instruction import Instruction
 from qdk_pythonic.core.qubit import Qubit, QubitRegister
 from qdk_pythonic.exceptions import ParserError, UnsupportedConstructError
+from qdk_pythonic.parser._expr_eval import eval_math_expr
+
+_OPENQASM_CONSTANTS: dict[str, float] = {
+    "pi": math.pi,
+}
 
 # Keywords that signal unsupported constructs.
 _UNSUPPORTED_KEYWORDS = frozenset({
@@ -356,11 +362,16 @@ class OpenQASMParser:
     def _parse_params(params_str: str) -> tuple[float, ...]:
         """Parse a comma-separated parameter string into floats.
 
+        Supports arithmetic expressions with ``pi`` (e.g. ``pi/2``).
+
         Args:
             params_str: Comma-separated parameter values.
 
         Returns:
             A tuple of float parameter values.
+
+        Raises:
+            ParserError: If a parameter expression cannot be evaluated.
         """
         parts = [p.strip() for p in params_str.split(",") if p.strip()]
-        return tuple(float(p) for p in parts)
+        return tuple(eval_math_expr(p, _OPENQASM_CONSTANTS) for p in parts)

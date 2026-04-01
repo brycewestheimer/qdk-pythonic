@@ -18,15 +18,15 @@ pip install -e ".[dev]"
 2. Make your changes.
 3. Run checks:
    ```bash
-   ruff check src/
+   ruff check src/ tests/
    mypy src/qdk_pythonic/ --strict
-   pytest tests/unit/ -v
+   python -m pytest tests/unit/ -v
    ```
 4. Open a pull request.
 
 ## Code style
 
-- **Linting:** `ruff check src/` (line length 99)
+- **Linting:** `ruff check src/ tests/` (line length 99)
 - **Formatting:** `ruff format src/ tests/`
 - **Type checking:** `mypy src/qdk_pythonic/ --strict`
 - **Docstrings:** Google style with Args, Returns, Raises sections
@@ -42,11 +42,11 @@ Tests use pytest with two markers:
 
 ```bash
 # Unit tests only
-pytest -m unit -v
+python -m pytest -m unit -v
 
 # Integration tests (requires qsharp)
 pip install -e ".[qsharp]"
-pytest -m integration -v
+python -m pytest -m integration -v
 ```
 
 ## Project structure

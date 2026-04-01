@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from qdk_pythonic.core.gates import CNOT, H, RX, S
+from qdk_pythonic.core.gates import CNOT, RX, H, S
 from qdk_pythonic.core.instruction import Instruction, Measurement, RawQSharp
 from qdk_pythonic.core.qubit import Qubit
 

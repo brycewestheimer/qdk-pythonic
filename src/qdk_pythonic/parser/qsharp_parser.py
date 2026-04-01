@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 from collections.abc import Callable
 from typing import Any
@@ -10,6 +11,12 @@ from qdk_pythonic.core.circuit import Circuit
 from qdk_pythonic.core.gates import GATE_CATALOG, GateDefinition
 from qdk_pythonic.core.qubit import Qubit, QubitRegister
 from qdk_pythonic.exceptions import ParserError, UnsupportedConstructError
+from qdk_pythonic.parser._expr_eval import eval_math_expr
+
+_QSHARP_CONSTANTS: dict[str, float] = {
+    "Std.Math.PI()": math.pi,
+    "PI()": math.pi,
+}
 
 # Keywords that signal unsupported control flow / constructs.
 _UNSUPPORTED_KEYWORDS = frozenset({
@@ -44,11 +51,11 @@ _RE_CTRL = re.compile(
 )
 # Adjoint gate: Adjoint <Gate>(<args>);
 _RE_ADJOINT = re.compile(
-    r"Adjoint\s+(\w+)\(([^)]*)\)\s*;",
+    r"Adjoint\s+(\w+)\((.+)\)\s*;",
 )
 # Regular gate with parenthesized args: <Gate>(<args>);
 _RE_GATE = re.compile(
-    r"(\w+)\(([^)]*)\)\s*;",
+    r"(\w+)\((.+)\)\s*;",
 )
 
 
@@ -283,7 +290,9 @@ class QSharpParser:
             # First N parts are params, rest are qubits
             param_parts = parts[:gate_def.num_params]
             qubit_parts = parts[gate_def.num_params:]
-            params = tuple(float(p) for p in param_parts)
+            params = tuple(
+                eval_math_expr(p, _QSHARP_CONSTANTS) for p in param_parts
+            )
             targets = [self._resolve_qubit(q, qubit_map) for q in qubit_parts]
             return params, targets
         else:
@@ -387,7 +396,10 @@ class QSharpParser:
             gate_def, method = self._get_gate_method(gate_name, circuit)
             if gate_def.num_params > 0:
                 parts = [p.strip() for p in args_str.split(",")]
-                params = tuple(float(p) for p in parts[:gate_def.num_params])
+                params = tuple(
+                    eval_math_expr(p, _QSHARP_CONSTANTS)
+                    for p in parts[:gate_def.num_params]
+                )
                 targets = [
                     self._resolve_qubit(p, qubit_map)
                     for p in parts[gate_def.num_params:]
@@ -412,7 +424,10 @@ class QSharpParser:
             gate_def, method = self._get_gate_method(gate_name, circuit)
             if gate_def.num_params > 0:
                 parts = [p.strip() for p in args_str.split(",")]
-                param_vals = [float(p) for p in parts[:gate_def.num_params]]
+                param_vals = [
+                    eval_math_expr(p, _QSHARP_CONSTANTS)
+                    for p in parts[:gate_def.num_params]
+                ]
                 qubit_parts = parts[gate_def.num_params:]
                 qubit_targets = [
                     self._resolve_qubit(q, qubit_map) for q in qubit_parts
@@ -423,4 +438,4 @@ class QSharpParser:
                 method(*qubit_targets)
             return
 
-        # Lines we don't recognize are silently skipped (e.g., braces, empty)
+        raise ParserError(f"Unrecognized Q# statement: {line}")

@@ -8,7 +8,6 @@ from qdk_pythonic.analysis.metrics import compute_qubit_count
 from qdk_pythonic.core.circuit import Circuit
 from qdk_pythonic.core.instruction import Instruction, Measurement, RawQSharp
 
-
 # ------------------------------------------------------------------
 # compute_depth
 # ------------------------------------------------------------------

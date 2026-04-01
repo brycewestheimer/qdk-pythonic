@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
@@ -17,6 +17,7 @@ class Qubit:
 
     index: int
     label: str | None = None
+    _circuit_id: int = field(default=0, repr=False)
 
 
 class QubitRegister:

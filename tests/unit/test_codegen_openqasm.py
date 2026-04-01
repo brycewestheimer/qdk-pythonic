@@ -6,6 +6,7 @@ import pytest
 
 from qdk_pythonic.codegen.openqasm import OpenQASMCodeGenerator
 from qdk_pythonic.core.circuit import Circuit
+from qdk_pythonic.exceptions import CodegenError
 
 
 @pytest.mark.unit
@@ -249,7 +250,7 @@ def test_measurements() -> None:
 @pytest.mark.unit
 def test_measure_all() -> None:
     circ = Circuit()
-    q = circ.allocate(3)
+    circ.allocate(3)
     circ.measure_all()
     gen = OpenQASMCodeGenerator()
     result = gen.generate(circ)
@@ -260,14 +261,14 @@ def test_measure_all() -> None:
 
 
 @pytest.mark.unit
-def test_raw_qsharp_becomes_comment() -> None:
+def test_raw_qsharp_raises_codegen_error() -> None:
     circ = Circuit()
     q = circ.allocate(1)
     circ.h(q[0])
     circ.raw_qsharp("let x = 42;")
     gen = OpenQASMCodeGenerator()
-    result = gen.generate(circ)
-    assert "// [raw Q# fragment omitted]" in result
+    with pytest.raises(CodegenError, match="Cannot export raw Q#"):
+        gen.generate(circ)
 
 
 @pytest.mark.unit
