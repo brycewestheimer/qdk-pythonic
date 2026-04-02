@@ -1,13 +1,15 @@
 # qdk-pythonic
 
-[![CI](https://github.com/westh/qdk-pythonic/actions/workflows/ci.yml/badge.svg)](https://github.com/westh/qdk-pythonic/actions/workflows/ci.yml)
+[![CI](https://github.com/brycewestheimer/qdk-pythonic/actions/workflows/ci.yml/badge.svg)](https://github.com/brycewestheimer/qdk-pythonic/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-A Pythonic API for the Microsoft Quantum Development Kit. Build quantum
-circuits, model condensed matter systems, price financial derivatives, encode
-data for quantum ML, and solve combinatorial optimization problems -- with Q#
-and OpenQASM code generation, simulation, and resource estimation.
+A typed, Pythonic workflow layer for the Microsoft Quantum Development Kit --
+circuit construction, Q# and OpenQASM code generation, simulation, and resource
+estimation. This is a proof of concept exploring what a more ergonomic
+Python-facing API for QDK could look like; the core circuit IR is the focus,
+and the included domain modules are integration examples rather than
+production-complete libraries.
 
 ## Why qdk-pythonic?
 
@@ -92,7 +94,7 @@ estimate = circ.estimate()
 - **Raw Q# escape hatch** -- embed arbitrary Q# fragments for constructs the builder can't express
 - **Type-safe** -- full type annotations, passes `mypy --strict`
 
-### Application Domains
+### Domain Adapters
 
 - **Condensed matter** -- Ising, Heisenberg, and Hubbard models on chain, square, and hexagonal lattices with Trotter time evolution
 - **Optimization** -- MaxCut, QUBO, and TSP problem encodings with QAOA circuit generation
@@ -100,10 +102,11 @@ estimate = circ.estimate()
 - **Machine learning** -- angle and amplitude encoding, quantum kernels, variational classifiers
 - **Shared primitives** -- Pauli Hamiltonians, Trotter decomposition, hardware-efficient ansatz, state preparation
 
-## Application Domains
+## Domain Adapters
 
-Every domain object produces a standard `Circuit`, so you can inspect, export,
-simulate, or estimate resources on the result.
+The repository includes domain adapters showing how the core API extends to
+application-facing workflows. Every domain object produces a standard `Circuit`,
+so you can inspect, export, simulate, or estimate resources on the result.
 
 ### Condensed Matter
 
@@ -145,7 +148,7 @@ kernel = QuantumKernel(encoding)
 circuit = kernel.to_circuit(x=[0.1, 0.2, 0.3, 0.4], y=[0.5, 0.6, 0.7, 0.8])
 ```
 
-### Parameterized Circuits
+## Parameterized Circuits
 
 ```python
 from qdk_pythonic import Circuit
@@ -160,16 +163,24 @@ bound = circ.bind_parameters({"theta": 0.5})
 print(bound.to_qsharp())
 ```
 
+## Where to Start
+
+If you're reviewing this repo, the best entry points are:
+
+1. [`src/qdk_pythonic/core/circuit.py`](src/qdk_pythonic/core/circuit.py) -- the typed circuit API
+2. [`src/qdk_pythonic/codegen/qsharp.py`](src/qdk_pythonic/codegen/qsharp.py) -- Q# generation from the circuit IR
+3. [`src/qdk_pythonic/execution/`](src/qdk_pythonic/execution/) -- QDK-backed simulation and resource estimation
+4. [`tests/unit/test_circuit.py`](tests/unit/test_circuit.py) -- behavior, validation, and API expectations
+
 ## Examples
 
 See [`examples/notebooks/`](examples/notebooks/) for Jupyter notebooks covering
-circuit building, resource estimation, condensed matter, optimization, finance,
-and ML workflows. [`examples/scripts/`](examples/scripts/) has standalone
-scripts.
+circuit building, resource estimation, and domain workflows.
+[`examples/scripts/`](examples/scripts/) has standalone scripts.
 
 ## Documentation
 
-Full API documentation is available at the project's GitHub Pages site.
+Sphinx API docs are in `docs/`. They can be built locally with `cd docs && make html`.
 
 ## Contributing
 

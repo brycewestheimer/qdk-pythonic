@@ -1,9 +1,11 @@
-Domain Modules
-==============
+Domain Adapters
+===============
 
-qdk-pythonic includes domain modules for condensed matter physics,
+qdk-pythonic includes domain adapter modules for condensed matter physics,
 combinatorial optimization, quantum finance, and quantum machine learning.
-Each module provides high-level abstractions that produce standard
+These are integration examples showing how the core circuit API can be
+specialized for real workflows -- not production-complete libraries.  Each
+module provides high-level abstractions that produce standard
 :class:`~qdk_pythonic.core.circuit.Circuit` objects.
 
 Design Philosophy

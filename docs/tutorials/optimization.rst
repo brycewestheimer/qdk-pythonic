@@ -1,6 +1,10 @@
 Combinatorial Optimization with QAOA
 ======================================
 
+This tutorial demonstrates how the core circuit API extends to optimization
+workflows.  The optimization module is an integration example, not a
+production-ready solver.
+
 qdk-pythonic maps combinatorial optimization problems to quantum circuits
 using the Quantum Approximate Optimization Algorithm (QAOA). It provides
 problem encodings for MaxCut, QUBO, and TSP, and a QAOA circuit builder

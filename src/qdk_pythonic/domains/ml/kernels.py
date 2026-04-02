@@ -16,6 +16,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from qdk_pythonic.core.circuit import remap_instruction
 from qdk_pythonic.domains.ml.encoding import AmplitudeEncoding, AngleEncoding
 
 if TYPE_CHECKING:
@@ -60,13 +61,15 @@ class QuantumKernel:
         circ.allocate(n)
 
         # Apply U(x)
-        for inst in circ_x.instructions:
-            circ.add_instruction(inst)
+        circ.compose_into(circ_x)
 
         # Apply U_dagger(y) via adjoint of each gate in reverse
-        y_insts = list(reversed(circ_y.instructions))
-        for inst in y_insts:
-            circ.add_instruction(inst)
+        q_map = {
+            src.index: tgt
+            for src, tgt in zip(circ_y.qubits, circ.qubits)
+        }
+        for inst in reversed(circ_y.instructions):
+            circ._instructions.append(remap_instruction(inst, q_map))
 
         # Measure all
         circ.measure_all()

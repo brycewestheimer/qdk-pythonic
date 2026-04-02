@@ -42,10 +42,10 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/westh/qdk-pythonic"
-Documentation = "https://westh.github.io/qdk-pythonic"
-Repository = "https://github.com/westh/qdk-pythonic"
-Changelog = "https://github.com/westh/qdk-pythonic/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/brycewestheimer/qdk-pythonic"
+Documentation = "https://brycewestheimer.github.io/qdk-pythonic"
+Repository = "https://github.com/brycewestheimer/qdk-pythonic"
+Changelog = "https://github.com/brycewestheimer/qdk-pythonic/blob/main/CHANGELOG.md"
 
 [tool.setuptools.dynamic]
 version = {attr = "qdk_pythonic._version.__version__"}

@@ -149,3 +149,28 @@ def test_amplitude_encoding_basis_state() -> None:
     circ = enc.to_circuit([0.0, 1.0, 0.0, 0.0])  # |01>
     assert circ.qubit_count() == 2
     assert circ.total_gate_count() > 0
+
+
+# ------------------------------------------------------------------
+# Codegen roundtrip (regression tests for qubit remapping)
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_quantum_kernel_codegen_roundtrip() -> None:
+    enc = AngleEncoding(n_features=3)
+    kernel = QuantumKernel(enc)
+    circ = kernel.to_circuit(x=[0.1, 0.2, 0.3], y=[0.4, 0.5, 0.6])
+    qs = circ.to_qsharp()
+    assert "Ry" in qs
+
+
+@pytest.mark.unit
+def test_variational_classifier_codegen_roundtrip() -> None:
+    enc = AngleEncoding(n_features=3)
+    ansatz = HardwareEfficientAnsatz(n_qubits=3, depth=1)
+    clf = VariationalClassifier(enc, ansatz)
+    params = [0.1] * ansatz.num_parameters
+    circ = clf.to_circuit(data=[0.1, 0.2, 0.3], params=params)
+    qs = circ.to_qsharp()
+    assert "Ry" in qs

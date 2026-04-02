@@ -176,6 +176,20 @@ def test_tsp_penalty_explicit() -> None:
     assert tsp._effective_penalty() == 100.0
 
 
+# ------------------------------------------------------------------
+# QAOA codegen roundtrip (regression test for qubit remapping)
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_qaoa_codegen_roundtrip() -> None:
+    mc = MaxCut(edges=[(0, 1), (1, 2), (2, 0)], n_nodes=3)
+    qaoa = QAOA(mc.to_hamiltonian(), p=2)
+    circ = qaoa.to_circuit(gamma=[0.5, 0.3], beta=[0.7, 0.2])
+    qs = circ.to_qsharp()
+    assert "H" in qs
+
+
 @pytest.mark.unit
 def test_tsp_invalid_nonsquare() -> None:
     with pytest.raises(ValueError, match="square"):

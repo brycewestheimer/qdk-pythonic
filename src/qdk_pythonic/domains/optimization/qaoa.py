@@ -95,15 +95,13 @@ class QAOA:
             cost_circ = self.cost_hamiltonian.to_trotter_circuit(
                 dt=gamma[k], steps=1,
             )
-            for inst in cost_circ.instructions:
-                circ.add_instruction(inst)
+            circ.compose_into(cost_circ)
 
             # Mixer unitary: exp(-i * beta[k] * B)
             mixer_circ = self.mixer.to_trotter_circuit(
                 dt=beta[k], steps=1,
             )
-            for inst in mixer_circ.instructions:
-                circ.add_instruction(inst)
+            circ.compose_into(mixer_circ)
 
         return circ
 

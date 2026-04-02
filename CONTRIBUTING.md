@@ -5,7 +5,7 @@ Thanks for your interest in contributing.
 ## Setup
 
 ```bash
-git clone https://github.com/westh/qdk-pythonic.git
+git clone https://github.com/brycewestheimer/qdk-pythonic.git
 cd qdk-pythonic
 python -m venv .venv
 source .venv/bin/activate

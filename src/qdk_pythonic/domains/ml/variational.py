@@ -71,12 +71,10 @@ class VariationalClassifier:
         q = circ.allocate(n)
 
         # Encoding layer
-        for inst in enc_circ.instructions:
-            circ.add_instruction(inst)
+        circ.compose_into(enc_circ)
 
         # Ansatz layer
-        for inst in ans_circ.instructions:
-            circ.add_instruction(inst)
+        circ.compose_into(ans_circ)
 
         # Measure first qubit as classification output
         circ.measure(q[0])

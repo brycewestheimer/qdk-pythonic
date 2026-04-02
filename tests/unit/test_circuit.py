@@ -951,3 +951,102 @@ def test_allocate_valid_label_alphanumeric() -> None:
     circ = Circuit()
     reg = circ.allocate(1, label="my_reg_2")
     assert reg.label == "my_reg_2"
+
+
+# ------------------------------------------------------------------
+# compose_into()
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_compose_into_positional_mapping() -> None:
+    """Default positional mapping remaps qubits by allocation order."""
+    src = Circuit()
+    sq = src.allocate(2)
+    src.h(sq[0]).cx(sq[0], sq[1])
+
+    tgt = Circuit()
+    tq = tgt.allocate(2)
+
+    tgt.compose_into(src)
+    assert len(tgt.instructions) == 2
+    # Remapped qubits should belong to tgt
+    inst0 = tgt.instructions[0]
+    assert isinstance(inst0, Instruction)
+    assert inst0.targets == (tq[0],)
+    inst1 = tgt.instructions[1]
+    assert isinstance(inst1, Instruction)
+    assert inst1.targets == (tq[0], tq[1])
+
+
+@pytest.mark.unit
+def test_compose_into_explicit_map() -> None:
+    """Explicit qubit_map lets callers wire qubits non-positionally."""
+    src = Circuit()
+    sq = src.allocate(1)
+    src.h(sq[0])
+
+    tgt = Circuit()
+    tq = tgt.allocate(2)
+
+    # Map src qubit 0 → tgt qubit 1 (not the default positional 0→0)
+    tgt.compose_into(src, qubit_map={sq[0].index: tq[1]})
+    inst = tgt.instructions[0]
+    assert isinstance(inst, Instruction)
+    assert inst.targets == (tq[1],)
+
+
+@pytest.mark.unit
+def test_compose_into_too_many_qubits_raises() -> None:
+    """Default mapping raises when source has more qubits than target."""
+    src = Circuit()
+    src.allocate(3)
+
+    tgt = Circuit()
+    tgt.allocate(2)
+
+    with pytest.raises(CircuitError, match="Source circuit has 3 qubits"):
+        tgt.compose_into(src)
+
+
+@pytest.mark.unit
+def test_compose_into_rejects_raw_qsharp() -> None:
+    src = Circuit()
+    src.allocate(1)
+    src.add_instruction(RawQSharp(code="Message(\"hi\");"))
+
+    tgt = Circuit()
+    tgt.allocate(1)
+
+    with pytest.raises(CircuitError, match="raw Q#"):
+        tgt.compose_into(src)
+
+
+@pytest.mark.unit
+def test_compose_into_codegen_succeeds() -> None:
+    """Composed circuit should produce valid Q# without CodegenError."""
+    src = Circuit()
+    sq = src.allocate(2)
+    src.h(sq[0]).cx(sq[0], sq[1])
+
+    tgt = Circuit()
+    tq = tgt.allocate(2)
+    tgt.x(tq[0])
+    tgt.compose_into(src)
+    tgt.measure_all()
+
+    qs = tgt.to_qsharp()
+    assert "H" in qs
+    assert "CNOT" in qs
+
+
+@pytest.mark.unit
+def test_compose_into_returns_self() -> None:
+    src = Circuit()
+    src.allocate(1)
+
+    tgt = Circuit()
+    tgt.allocate(1)
+
+    result = tgt.compose_into(src)
+    assert result is tgt

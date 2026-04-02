@@ -1,5 +1,6 @@
 """Core data model: circuits, qubits, gates, and instructions."""
 
+from qdk_pythonic.core.circuit import remap_instruction
 from qdk_pythonic.core.gates import (
     CCNOT,
     CNOT,
@@ -55,4 +56,5 @@ __all__ = [
     "X",
     "Y",
     "Z",
+    "remap_instruction",
 ]

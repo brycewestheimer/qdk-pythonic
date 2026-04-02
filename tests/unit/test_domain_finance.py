@@ -177,3 +177,37 @@ def test_european_call_uses_qae() -> None:
     gates = circ.gate_count()
     # Should have R1 gates from inverse QFT
     assert gates.get("R1", 0) > 0
+
+
+# ------------------------------------------------------------------
+# Codegen roundtrip (regression tests for qubit remapping)
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_qae_codegen_roundtrip() -> None:
+    """QAE circuit must produce valid Q# after qubit remapping fix."""
+    state = Circuit()
+    q = state.allocate(2)
+    state.h(q[0]).h(q[1])
+
+    oracle = Circuit()
+    q2 = oracle.allocate(2)
+    oracle.z(q2[0])
+
+    qae = QuantumAmplitudeEstimation(
+        state_prep=state, oracle=oracle, n_estimation_qubits=3,
+    )
+    circ = qae.to_circuit()
+    qs = circ.to_qsharp()
+    assert "H" in qs
+    assert "R1" in qs  # inverse QFT
+
+
+@pytest.mark.unit
+def test_european_call_codegen_roundtrip() -> None:
+    dist = LogNormalDistribution(mu=0.0, sigma=0.5, n_qubits=2, bounds=(0.5, 2.0))
+    option = EuropeanCallOption(strike=1.0, distribution=dist)
+    circ = option.to_circuit(n_estimation_qubits=3)
+    qs = circ.to_qsharp()
+    assert "H" in qs

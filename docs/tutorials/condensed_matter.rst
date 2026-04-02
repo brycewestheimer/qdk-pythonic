@@ -1,6 +1,10 @@
 Condensed Matter Simulation
 ===========================
 
+This tutorial demonstrates how the core circuit API extends to condensed
+matter workflows.  The condensed matter module is an integration example,
+not a production-ready simulation library.
+
 qdk-pythonic provides lattice spin models that map directly to Pauli
 Hamiltonians and Trotter circuits. The main use case is estimating the
 physical resources needed for quantum simulation of condensed matter systems.

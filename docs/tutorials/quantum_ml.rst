@@ -1,6 +1,10 @@
 Quantum Machine Learning
 =========================
 
+This tutorial demonstrates how the core circuit API extends to machine
+learning workflows.  The ML module is an integration example, not a
+production-ready QML library.
+
 qdk-pythonic provides components for encoding classical data into quantum
 states, computing quantum kernels, and building variational classifiers.
 All components produce standard ``Circuit`` objects for inspection,

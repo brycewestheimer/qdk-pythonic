@@ -1,6 +1,10 @@
 Quantum Finance
 ================
 
+This tutorial demonstrates how the core circuit API extends to finance
+workflows.  The finance module is an integration example, not a
+production-ready pricing library.
+
 qdk-pythonic provides building blocks for quantum computational finance:
 probability distribution loading, payoff oracles, and quantum amplitude
 estimation (QAE) for option pricing.

@@ -230,6 +230,56 @@ class Circuit:
         self._instructions.append(inst)
         return self
 
+    def compose_into(
+        self,
+        other: Circuit,
+        qubit_map: dict[int, Qubit] | None = None,
+    ) -> Circuit:
+        """Append another circuit's instructions with remapped qubits.
+
+        Remaps qubit references from *other* into this circuit using
+        the provided mapping.  When *qubit_map* is ``None`` a positional
+        mapping is built: the *i*-th qubit of *other* maps to the *i*-th
+        qubit of *self*.
+
+        Args:
+            other: Source circuit whose instructions are appended.
+            qubit_map: Optional mapping from *other*'s qubit indices to
+                :class:`Qubit` objects owned by this circuit.
+
+        Returns:
+            self, for fluent chaining.
+
+        Raises:
+            CircuitError: If *other* contains ``RawQSharp`` instructions,
+                if the default positional mapping cannot be built because
+                *other* has more qubits than *self*, or if a mapped-to
+                qubit is not owned by this circuit.
+        """
+        if any(isinstance(i, RawQSharp) for i in other._instructions):
+            raise CircuitError(
+                "Cannot compose circuit containing raw Q# fragments"
+            )
+
+        if qubit_map is None:
+            if len(other._qubits) > len(self._qubits):
+                raise CircuitError(
+                    f"Source circuit has {len(other._qubits)} qubits "
+                    f"but target has only {len(self._qubits)}"
+                )
+            qubit_map = {
+                src.index: tgt
+                for src, tgt in zip(other._qubits, self._qubits)
+            }
+
+        for tgt in qubit_map.values():
+            self._validate_qubit_owned(tgt)
+
+        for inst in other._instructions:
+            self._instructions.append(remap_instruction(inst, qubit_map))
+
+        return self
+
     def _copy_structure(self) -> Circuit:
         """Create a structural copy of this circuit without instructions."""
         copy = Circuit.__new__(Circuit)
@@ -958,14 +1008,14 @@ class Circuit:
         other_map = other._remap_into(result)
 
         for inst in self._instructions:
-            result._instructions.append(_remap_instruction(inst, self_map))
+            result._instructions.append(remap_instruction(inst, self_map))
         for inst in other._instructions:
-            result._instructions.append(_remap_instruction(inst, other_map))
+            result._instructions.append(remap_instruction(inst, other_map))
 
         return result
 
 
-def _remap_instruction(
+def remap_instruction(
     inst: InstructionLike, qubit_map: dict[int, Qubit],
 ) -> InstructionLike:
     """Remap qubit references in an instruction using *qubit_map*."""
