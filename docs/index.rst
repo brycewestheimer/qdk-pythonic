@@ -30,6 +30,8 @@ estimation.
    tutorials/optimization
    tutorials/quantum_finance
    tutorials/quantum_ml
+   tutorials/quspin_integration
+   tutorials/networkx_integration
 
 .. toctree::
    :maxdepth: 2
@@ -82,6 +84,7 @@ estimation.
    api/domains_optimization
    api/domains_finance
    api/domains_ml
+   api/adapters
 
 Indices and tables
 ==================

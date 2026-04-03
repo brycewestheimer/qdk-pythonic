@@ -104,3 +104,43 @@ Each domain has a dedicated tutorial with worked examples:
 - :doc:`/tutorials/optimization`
 - :doc:`/tutorials/quantum_finance`
 - :doc:`/tutorials/quantum_ml`
+
+External Package Adapters
+-------------------------
+
+The ``adapters`` package provides integration with external domain
+libraries.  Each adapter translates domain-native objects into existing
+qdk-pythonic primitives, so domain scientists never need to write Q# or
+understand qubit mappings.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 15 25 40
+
+   * - Package
+     - Functions
+     - Description
+   * - `QuSpin <https://quspin.github.io/QuSpin/>`_
+     - ``from_quspin_static_list``, ``from_quspin_hamiltonian``,
+       ``simulate_quspin_model``
+     - Convert spin Hamiltonian specifications to ``PauliHamiltonian``
+       and Trotter circuits.  Handles ladder operators (S+/S-).
+   * - `NetworkX <https://networkx.org/>`_
+     - ``maxcut_from_networkx``, ``solve_maxcut``,
+       ``compare_qaoa_depths``, ``build_qaoa_circuit``,
+       ``graph_coloring_to_hamiltonian``
+     - Convert graphs to ``MaxCut`` / ``QAOA`` circuits.
+       Supports weighted edges and arbitrary node types.
+
+Install the optional dependencies with:
+
+.. code-block:: bash
+
+   pip install "qdk-pythonic[quspin]"    # QuSpin adapter
+   pip install "qdk-pythonic[networkx]"  # NetworkX adapter
+   pip install "qdk-pythonic[adapters]"  # both
+
+Adapter tutorials:
+
+- :doc:`/tutorials/quspin_integration`
+- :doc:`/tutorials/networkx_integration`

@@ -56,6 +56,14 @@ To run circuits on the Q# simulator or use resource estimation:
 pip install "qdk-pythonic[qsharp]"
 ```
 
+For external package integrations:
+
+```bash
+pip install "qdk-pythonic[quspin]"    # QuSpin adapter
+pip install "qdk-pythonic[networkx]"  # NetworkX adapter
+pip install "qdk-pythonic[adapters]"  # both
+```
+
 ## Quick Start
 
 ```python
@@ -102,6 +110,11 @@ estimate = circ.estimate()
 - **Machine learning** -- angle and amplitude encoding, quantum kernels, variational classifiers
 - **Shared primitives** -- Pauli Hamiltonians, Trotter decomposition, hardware-efficient ansatz, state preparation
 
+### External Package Integrations
+
+- **QuSpin** -- convert QuSpin spin Hamiltonian specifications to Trotter circuits and resource estimates
+- **NetworkX** -- convert graph problems (MaxCut, coloring) to QAOA circuits with one function call
+
 ## Domain Adapters
 
 The repository includes domain adapters showing how the core API extends to
@@ -146,6 +159,26 @@ from qdk_pythonic.domains.ml import AngleEncoding, QuantumKernel
 encoding = AngleEncoding(n_features=4)
 kernel = QuantumKernel(encoding)
 circuit = kernel.to_circuit(x=[0.1, 0.2, 0.3, 0.4], y=[0.5, 0.6, 0.7, 0.8])
+```
+
+### QuSpin Integration
+
+```python
+from qdk_pythonic.adapters.quspin_adapter import simulate_quspin_model
+
+static = [["zz", [[1.0, i, i+1] for i in range(7)]], ["x", [[0.5, i] for i in range(8)]]]
+result = simulate_quspin_model(static, n_sites=8, time=1.0, trotter_steps=10)
+# result has circuit, gate counts, depth -- zero Q# written
+```
+
+### NetworkX Integration
+
+```python
+import networkx as nx
+from qdk_pythonic.adapters.networkx_adapter import solve_maxcut
+
+result = solve_maxcut(nx.random_regular_graph(3, 20, seed=42), p=3)
+# result has QAOA circuit, gate counts, depth -- zero Q# written
 ```
 
 ## Parameterized Circuits

@@ -8,6 +8,8 @@ Standalone Python scripts demonstrating common qdk-pythonic workflows.
 | [ghz_state.py](ghz_state.py) | Parameterized N-qubit GHZ state (accepts qubit count as CLI arg) |
 | [resource_sweep.py](resource_sweep.py) | Sweep circuit sizes and compare resource estimates (requires qsharp) |
 | [qiskit_interop.py](qiskit_interop.py) | Export to OpenQASM 3.0 and optionally import into Qiskit |
+| [quspin_ising_scaling.py](quspin_ising_scaling.py) | Transverse-field Ising scaling study via QuSpin adapter |
+| [networkx_maxcut_scaling.py](networkx_maxcut_scaling.py) | MaxCut on random graphs with QAOA depth comparison |
 
 ## Running
 
