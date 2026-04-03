@@ -159,9 +159,10 @@ def _build_measurement_circuit(
             circ.rx(-math.pi / 2, q[qi])
         # Z needs no basis change
 
-    # Measure all relevant qubits
-    measured_qubits = sorted(qubit_basis.keys())
-    for qi in measured_qubits:
+    # Measure ALL qubits so the Q# runtime can release them.
+    # MResetZ resets each qubit to |0> after measurement, which
+    # is required by the Q# qubit release semantics.
+    for qi in range(n_qubits):
         circ.measure(q[qi])
 
     return circ

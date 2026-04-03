@@ -370,6 +370,66 @@ def test_registry_pyscf_qpe() -> None:
         _factories.extend(original)
 
 
+# ── CASCI active space ──
+
+
+@pytest.mark.integration
+def test_casci_active_space_qpe() -> None:
+    """CASCI active space on LiH should produce a smaller Hamiltonian."""
+    from qdk_pythonic.adapters.pyscf_adapter import molecular_hamiltonian
+
+    h_full = molecular_hamiltonian("Li 0 0 0; H 0 0 1.6", basis="sto-3g")
+    h_active = molecular_hamiltonian(
+        "Li 0 0 0; H 0 0 1.6", basis="sto-3g",
+        n_active_electrons=2, n_active_orbitals=2,
+    )
+    assert h_active.qubit_count() < h_full.qubit_count()
+
+
+# ── One-call convenience functions ──
+
+
+@pytest.mark.integration
+def test_molecular_qpe_one_call() -> None:
+    """molecular_qpe() should return a ChemistryResourceEstimate."""
+    from qdk_pythonic.adapters.pyscf_adapter import molecular_qpe
+
+    result = molecular_qpe(
+        "H 0 0 0; H 0 0 0.74", n_estimation_qubits=3,
+    )
+    assert result.algorithm_name == "trotter_qpe"
+    assert result.physical.physical_qubits > 0
+    assert result.hamiltonian_info["n_electrons"] == 2
+
+
+@pytest.mark.integration
+def test_molecular_qpe_casci() -> None:
+    """molecular_qpe() with active space should work."""
+    from qdk_pythonic.adapters.pyscf_adapter import molecular_qpe
+
+    result = molecular_qpe(
+        "Li 0 0 0; H 0 0 1.6", basis="sto-3g",
+        n_active_electrons=2, n_active_orbitals=2,
+        n_estimation_qubits=3,
+    )
+    assert result.hamiltonian_info["n_electrons"] == 2
+    assert result.physical.physical_qubits > 0
+
+
+@pytest.mark.integration
+def test_molecular_vqe_one_call() -> None:
+    """molecular_vqe() should return a VQEResult."""
+    from qdk_pythonic.adapters.pyscf_adapter import molecular_vqe
+
+    result = molecular_vqe(
+        "H 0 0 0; H 0 0 0.74",
+        max_iterations=3, shots=200,
+    )
+    assert hasattr(result, "optimal_energy")
+    assert hasattr(result, "optimal_params")
+    assert result.n_iterations > 0
+
+
 # ── qsharp.chemistry bridge ──
 
 
