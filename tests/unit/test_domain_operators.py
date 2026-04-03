@@ -247,3 +247,47 @@ def test_trotter_zero_coeff_skipped() -> None:
     h = PauliHamiltonian([PauliTerm(pauli_ops={0: "Z"}, coeff=0.0)])
     circ = h.to_trotter_circuit(dt=0.1, steps=1)
     assert circ.total_gate_count() == 0
+
+
+# ------------------------------------------------------------------
+# Complex coefficients
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_complex_coeff_construction() -> None:
+    t = PauliTerm(pauli_ops={0: "Z"}, coeff=(0.5 + 0.3j))
+    assert t.coeff == pytest.approx(0.5 + 0.3j)
+
+
+@pytest.mark.unit
+def test_complex_scalar_multiply() -> None:
+    t = (0.5 + 0.5j) * Z(0)
+    assert t.coeff == pytest.approx(0.5 + 0.5j)
+
+
+@pytest.mark.unit
+def test_complex_right_scalar_multiply() -> None:
+    t = Z(0) * (0.5 + 0.5j)
+    assert t.coeff == pytest.approx(0.5 + 0.5j)
+
+
+@pytest.mark.unit
+def test_complex_tensor_product_coeff() -> None:
+    t = (0.5j) * X(0) * Y(1)
+    assert t.coeff == pytest.approx(0.5j)
+    assert t.pauli_ops == {0: "X", 1: "Y"}
+
+
+@pytest.mark.unit
+def test_trotter_complex_coeff_raises() -> None:
+    h = PauliHamiltonian([PauliTerm(pauli_ops={0: "Z"}, coeff=(1.0 + 0.5j))])
+    with pytest.raises(ValueError, match="real coefficients"):
+        h.to_trotter_circuit(dt=0.1, steps=1)
+
+
+@pytest.mark.unit
+def test_trotter_real_complex_coeff_succeeds() -> None:
+    h = PauliHamiltonian([PauliTerm(pauli_ops={0: "Z"}, coeff=complex(1.0, 0.0))])
+    circ = h.to_trotter_circuit(dt=0.1, steps=1)
+    assert circ.total_gate_count() == 1

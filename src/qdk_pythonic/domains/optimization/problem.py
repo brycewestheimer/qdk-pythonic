@@ -35,18 +35,25 @@ class MaxCut:
 
     edges: list[tuple[int, int]]
     n_nodes: int
+    weights: list[float] | None = None
 
     def __post_init__(self) -> None:
         if self.n_nodes < 2:
             raise ValueError(
                 f"MaxCut requires n_nodes >= 2, got {self.n_nodes}"
             )
+        if self.weights is not None and len(self.weights) != len(self.edges):
+            raise ValueError(
+                f"weights length ({len(self.weights)}) must match "
+                f"edges length ({len(self.edges)})"
+            )
 
     def to_hamiltonian(self) -> PauliHamiltonian:
         """Convert to a cost Hamiltonian in Ising form."""
         ham = PauliHamiltonian()
-        for i, j in self.edges:
-            ham += PauliTerm(pauli_ops={i: "Z", j: "Z"}, coeff=-0.5)
+        for idx, (i, j) in enumerate(self.edges):
+            w = self.weights[idx] if self.weights else 1.0
+            ham += PauliTerm(pauli_ops={i: "Z", j: "Z"}, coeff=-w / 2)
         return ham
 
 

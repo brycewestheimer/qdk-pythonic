@@ -40,7 +40,7 @@ class PauliTerm:
     """
 
     pauli_ops: dict[int, str]
-    coeff: float = 1.0
+    coeff: complex = 1.0
 
     def __post_init__(self) -> None:
         for idx, op in self.pauli_ops.items():
@@ -52,7 +52,7 @@ class PauliTerm:
 
     def __mul__(self, other: object) -> PauliTerm:
         """Tensor-product two terms or multiply by a scalar."""
-        if isinstance(other, (int, float)):
+        if isinstance(other, (int, float, complex)):
             return PauliTerm(
                 pauli_ops=dict(self.pauli_ops),
                 coeff=self.coeff * other,
@@ -73,7 +73,7 @@ class PauliTerm:
 
     def __rmul__(self, other: object) -> PauliTerm:
         """Scalar multiplication from the left."""
-        if isinstance(other, (int, float)):
+        if isinstance(other, (int, float, complex)):
             return PauliTerm(
                 pauli_ops=dict(self.pauli_ops),
                 coeff=self.coeff * other,
@@ -264,7 +264,13 @@ def _apply_pauli_rotation(
     if abs(term.coeff) < 1e-15:
         return
 
-    angle = 2.0 * term.coeff * dt
+    if isinstance(term.coeff, complex) and abs(term.coeff.imag) > 1e-15:
+        raise ValueError(
+            f"Trotter evolution requires real coefficients, "
+            f"got {term.coeff} for term on qubits "
+            f"{sorted(term.pauli_ops.keys())}"
+        )
+    angle = 2.0 * term.coeff.real * dt
     sorted_qubits = sorted(term.pauli_ops.keys())
 
     if len(sorted_qubits) == 1:

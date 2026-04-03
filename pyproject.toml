@@ -28,6 +28,9 @@ dependencies = []
 
 [project.optional-dependencies]
 qsharp = ["qsharp>=1.25"]
+quspin = ["quspin>=0.3.7"]
+networkx = ["networkx>=3.0"]
+adapters = ["quspin>=0.3.7", "networkx>=3.0"]
 dev = [
     "pytest>=8.0",
     "ruff>=0.4",

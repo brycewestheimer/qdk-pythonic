@@ -36,6 +36,35 @@ def test_maxcut_invalid_nodes() -> None:
         MaxCut(edges=[], n_nodes=1)
 
 
+@pytest.mark.unit
+def test_maxcut_weighted() -> None:
+    mc = MaxCut(
+        edges=[(0, 1), (1, 2)],
+        n_nodes=3,
+        weights=[2.0, 3.0],
+    )
+    ham = mc.to_hamiltonian()
+    assert len(ham) == 2
+    coeffs = sorted([t.coeff.real for t in ham.terms])
+    assert coeffs[0] == pytest.approx(-1.5)  # 3.0 / 2
+    assert coeffs[1] == pytest.approx(-1.0)  # 2.0 / 2
+
+
+@pytest.mark.unit
+def test_maxcut_weights_length_mismatch() -> None:
+    with pytest.raises(ValueError, match="weights length"):
+        MaxCut(edges=[(0, 1)], n_nodes=2, weights=[1.0, 2.0])
+
+
+@pytest.mark.unit
+def test_maxcut_unweighted_default() -> None:
+    mc = MaxCut(edges=[(0, 1), (1, 2)], n_nodes=3)
+    assert mc.weights is None
+    ham = mc.to_hamiltonian()
+    for t in ham.terms:
+        assert t.coeff == pytest.approx(-0.5)
+
+
 # ------------------------------------------------------------------
 # QUBO
 # ------------------------------------------------------------------
