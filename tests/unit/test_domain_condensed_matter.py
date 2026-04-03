@@ -112,8 +112,9 @@ def test_hubbard_chain_term_count() -> None:
     model = HubbardModel(Chain(2), t=1.0, U=1.0)
     ham = model.to_hamiltonian()
     # 1 edge * 2 spins * 2 (XX, YY) = 4 hopping terms
-    # 2 sites * 3 on-site terms = 6 on-site terms
-    assert len(ham) == 10
+    # 2 sites * 3 on-site Z terms = 6 on-site terms
+    # 1 identity (constant offset) term
+    assert len(ham) == 11
 
 
 @pytest.mark.unit

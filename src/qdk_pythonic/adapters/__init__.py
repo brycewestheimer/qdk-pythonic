@@ -14,6 +14,8 @@ Available adapters:
   Requires ``pip install qdk-pythonic[quspin]``.
 - ``networkx_adapter`` -- Convert NetworkX graphs to QAOA circuits.
   Requires ``pip install qdk-pythonic[networkx]``.
+- ``pyscf_adapter`` -- Build molecular Hamiltonians from PySCF.
+  Requires ``pip install qdk-pythonic[pyscf]``.
 """
 
 import contextlib
@@ -32,4 +34,11 @@ with contextlib.suppress(ImportError):
     )
 
     _load_networkx()
+
+with contextlib.suppress(ImportError):
+    from qdk_pythonic.adapters.pyscf_algorithms import (
+        load as _load_pyscf,
+    )
+
+    _load_pyscf()
 

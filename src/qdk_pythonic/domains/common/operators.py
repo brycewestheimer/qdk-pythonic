@@ -96,6 +96,61 @@ def Z(qubit: int) -> PauliTerm:  # noqa: N802
     return PauliTerm(pauli_ops={qubit: "Z"})
 
 
+# ── Pauli algebra ──
+
+# Single-qubit Pauli product table: (A, B) -> (result, phase)
+# where A * B = phase * result.
+_PAULI_PRODUCT: dict[tuple[str, str], tuple[str, complex]] = {
+    ("X", "X"): ("I", 1),
+    ("X", "Y"): ("Z", 1j),
+    ("X", "Z"): ("Y", -1j),
+    ("Y", "X"): ("Z", -1j),
+    ("Y", "Y"): ("I", 1),
+    ("Y", "Z"): ("X", 1j),
+    ("Z", "X"): ("Y", 1j),
+    ("Z", "Y"): ("X", -1j),
+    ("Z", "Z"): ("I", 1),
+}
+
+
+def pauli_identity() -> PauliTerm:
+    """Return the identity Pauli operator."""
+    return PauliTerm(pauli_ops={}, coeff=1.0)
+
+
+def pauli_multiply(a: PauliTerm, b: PauliTerm) -> PauliTerm:
+    """Full Pauli algebra product of two terms.
+
+    Unlike ``PauliTerm.__mul__``, this handles overlapping qubit
+    indices using the Pauli multiplication table (e.g. X * Y = iZ).
+
+    Args:
+        a: Left operand.
+        b: Right operand.
+
+    Returns:
+        The product as a single PauliTerm.
+    """
+    result_ops: dict[int, str] = {}
+    phase: complex = 1
+
+    all_qubits = set(a.pauli_ops) | set(b.pauli_ops)
+    for qi in all_qubits:
+        op_a = a.pauli_ops.get(qi)
+        op_b = b.pauli_ops.get(qi)
+        if op_a and op_b:
+            res, p = _PAULI_PRODUCT[(op_a, op_b)]
+            phase *= p
+            if res != "I":
+                result_ops[qi] = res
+        elif op_a:
+            result_ops[qi] = op_a
+        elif op_b:
+            result_ops[qi] = op_b
+
+    return PauliTerm(pauli_ops=result_ops, coeff=a.coeff * b.coeff * phase)
+
+
 class PauliHamiltonian:
     """A sum of Pauli tensor product terms.
 
@@ -146,6 +201,26 @@ class PauliHamiltonian:
         for term in self.terms:
             indices.update(term.pauli_ops.keys())
         return sorted(indices)
+
+    def simplify(self, tol: float = 1e-15) -> PauliHamiltonian:
+        """Combine like Pauli strings and drop near-zero terms.
+
+        Returns a new PauliHamiltonian with duplicate Pauli strings
+        merged (coefficients summed) and terms with ``|coeff| < tol``
+        removed.
+        """
+        combined: dict[tuple[tuple[int, str], ...], complex] = {}
+        for term in self.terms:
+            key = tuple(sorted(term.pauli_ops.items()))
+            combined[key] = combined.get(key, 0) + term.coeff
+        result = PauliHamiltonian()
+        for key, coeff in combined.items():
+            if abs(coeff) < tol:
+                continue
+            result.terms.append(PauliTerm(
+                pauli_ops=dict(key), coeff=coeff,
+            ))
+        return result
 
     def summary(self) -> dict[str, Any]:
         """Return a summary of the Hamiltonian for inspection.
@@ -309,6 +384,10 @@ def _apply_pauli_rotation(
     for arbitrary Pauli strings.
     """
     if abs(term.coeff) < 1e-15:
+        return
+
+    # Identity terms (constant energy offsets) are global phase — skip.
+    if not term.pauli_ops:
         return
 
     if isinstance(term.coeff, complex) and abs(term.coeff.imag) > 1e-15:

@@ -13,6 +13,8 @@ from qdk_pythonic.domains.common.operators import (
     X,
     Y,
     Z,
+    pauli_identity,
+    pauli_multiply,
 )
 
 # ------------------------------------------------------------------
@@ -329,3 +331,57 @@ def test_print_summary(capsys: pytest.CaptureFixture[str]) -> None:
     assert "PauliHamiltonian:" in captured.out
     assert "3 terms" in captured.out
     assert "2 qubits" in captured.out
+
+
+# ------------------------------------------------------------------
+# Pauli algebra
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_pauli_multiply_non_overlapping() -> None:
+    result = pauli_multiply(X(0), Z(1))
+    assert result.pauli_ops == {0: "X", 1: "Z"}
+    assert result.coeff == pytest.approx(1.0)
+
+
+@pytest.mark.unit
+def test_pauli_multiply_xx_is_identity() -> None:
+    result = pauli_multiply(X(0), X(0))
+    assert result.pauli_ops == {}
+    assert result.coeff == pytest.approx(1.0)
+
+
+@pytest.mark.unit
+def test_pauli_multiply_xy_is_iz() -> None:
+    result = pauli_multiply(X(0), Y(0))
+    assert result.pauli_ops == {0: "Z"}
+    assert result.coeff == pytest.approx(1j)
+
+
+@pytest.mark.unit
+def test_pauli_multiply_yz_is_ix() -> None:
+    result = pauli_multiply(Y(0), Z(0))
+    assert result.pauli_ops == {0: "X"}
+    assert result.coeff == pytest.approx(1j)
+
+
+@pytest.mark.unit
+def test_pauli_multiply_phase_accumulation() -> None:
+    # X0*Y0 = iZ0 and X1*Y1 = iZ1 -> combined phase = i*i = -1
+    a = PauliTerm(pauli_ops={0: "X", 1: "X"}, coeff=1.0)
+    b = PauliTerm(pauli_ops={0: "Y", 1: "Y"}, coeff=1.0)
+    result = pauli_multiply(a, b)
+    assert result.pauli_ops == {0: "Z", 1: "Z"}
+    assert result.coeff == pytest.approx(-1.0)
+
+
+@pytest.mark.unit
+def test_pauli_identity() -> None:
+    ident = pauli_identity()
+    assert ident.pauli_ops == {}
+    assert ident.coeff == pytest.approx(1.0)
+    # I * X = X
+    result = pauli_multiply(ident, X(0))
+    assert result.pauli_ops == {0: "X"}
+    assert result.coeff == pytest.approx(1.0)
