@@ -24,6 +24,12 @@ from typing import Any
 from qdk_pythonic.domains.common.evolution import TrotterEvolution
 from qdk_pythonic.domains.common.operators import PauliHamiltonian, PauliTerm
 
+__all__ = [
+    "from_quspin_hamiltonian",
+    "from_quspin_static_list",
+    "simulate_quspin_model",
+]
+
 # ── Mapping from QuSpin operator strings to Pauli operators ──
 
 # QuSpin uses spin-1/2 operators: "x", "y", "z", "+", "-", "I"

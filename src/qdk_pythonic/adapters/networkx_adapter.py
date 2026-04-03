@@ -26,6 +26,14 @@ from qdk_pythonic.domains.common.operators import PauliHamiltonian, PauliTerm
 from qdk_pythonic.domains.optimization.problem import MaxCut
 from qdk_pythonic.domains.optimization.qaoa import QAOA
 
+__all__ = [
+    "build_qaoa_circuit",
+    "compare_qaoa_depths",
+    "graph_coloring_to_hamiltonian",
+    "maxcut_from_networkx",
+    "solve_maxcut",
+]
+
 
 def _require_networkx() -> Any:
     """Lazily import networkx, raising a clear error if missing."""
