@@ -145,10 +145,36 @@ call:
    print(f"Total gates:  {result['total_gates']}")
    print(f"Depth:        {result['depth']}")
 
+Convenience Functions
+----------------------
+
+For end-to-end workflows that handle the entire pipeline
+automatically, use the one-call convenience functions:
+
+.. code-block:: python
+
+   from qdk_pythonic.adapters.pyscf_adapter import (
+       molecular_qpe, molecular_vqe, molecular_resource_comparison,
+   )
+
+   # QPE with structured resource estimate (requires qsharp)
+   result = molecular_qpe("H 0 0 0; H 0 0 0.74", n_estimation_qubits=8)
+   result.print_report()
+
+   # VQE with UCCSD ansatz (requires qsharp)
+   vqe_result = molecular_vqe("H 0 0 0; H 0 0 0.74", max_iterations=50)
+   print(f"Energy: {vqe_result.optimal_energy:.6f} Ha")
+
+   # Side-by-side Trotter vs qubitization (requires qsharp)
+   molecular_resource_comparison("H 0 0 0; H 0 0 0.74", n_estimation_qubits=8)
+
+These functions support CASCI active space selection via the
+``n_active_electrons`` and ``n_active_orbitals`` parameters.
+
 Next Steps
 -----------
 
-- :doc:`/tutorials/chemistry` -- QPE, VQE, UCCSD, qubitization, and resource estimation
+- :doc:`/tutorials/chemistry` -- QPE, VQE, UCCSD, qubitization, tapering, and resource estimation
 - :doc:`/tutorials/quspin_integration` -- condensed matter Hamiltonians
 - :doc:`/tutorials/networkx_integration` -- graph optimization
 - :doc:`/api/domains_chemistry` -- chemistry API reference

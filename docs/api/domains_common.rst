@@ -53,6 +53,13 @@ Double Factorization
    :members:
    :show-inheritance:
 
+Qubit Tapering
+---------------
+
+.. automodule:: qdk_pythonic.domains.common.tapering
+   :members:
+   :show-inheritance:
+
 LCU / Qubitization Primitives
 ------------------------------
 

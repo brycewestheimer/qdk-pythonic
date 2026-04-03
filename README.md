@@ -116,7 +116,7 @@ estimate = circ.estimate()
 - **Optimization** -- MaxCut, QUBO, and TSP problem encodings with QAOA circuit generation
 - **Finance** -- log-normal distributions, European call option pricing via quantum amplitude estimation
 - **Machine learning** -- angle and amplitude encoding, quantum kernels, variational classifiers
-- **Shared primitives** -- Pauli Hamiltonians, fermionic operators, Jordan-Wigner and Bravyi-Kitaev qubit mappings, Trotter decomposition, hardware-efficient ansatz, state preparation
+- **Shared primitives** -- Pauli Hamiltonians, fermionic operators, Jordan-Wigner and Bravyi-Kitaev qubit mappings, Trotter decomposition, qubit tapering via Z2 symmetries, hardware-efficient ansatz, state preparation
 
 ### External Package Integrations
 
@@ -232,6 +232,24 @@ scf = run_scf("H 0 0 0; H 0 0 0.74")
 h1e, h2e, nuc = get_integrals(scf)
 df = double_factorize(h1e, h2e, nuc, n_electrons=2)
 df.print_summary()
+```
+
+For quick end-to-end workflows (requires qsharp):
+
+```python
+from qdk_pythonic.adapters.pyscf_adapter import (
+    molecular_qpe, molecular_vqe, molecular_resource_comparison,
+)
+
+# One call: geometry -> structured resource estimate
+result = molecular_qpe("H 0 0 0; H 0 0 0.74", n_estimation_qubits=8)
+result.print_report()
+
+# One call: geometry -> VQE optimization
+vqe_result = molecular_vqe("H 0 0 0; H 0 0 0.74", max_iterations=50)
+
+# Side-by-side Trotter vs qubitization comparison
+molecular_resource_comparison("H 0 0 0; H 0 0 0.74")
 ```
 
 FCIDUMP file I/O is also supported for interoperability with other

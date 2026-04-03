@@ -127,6 +127,33 @@ def main() -> None:
     print(f"{'Qubitization QPE':<20} {qubit_circ.qubit_count():>8} "
           f"{qubit_circ.total_gate_count():>10} {qubit_circ.depth():>8}")
 
+    # ── Stage 9: Qubit tapering ──
+    print("\n" + "=" * 60)
+    print("Stage 9: Qubit Tapering")
+    print("=" * 60)
+    from qdk_pythonic.domains.common.tapering import (
+        find_z2_symmetries,
+        taper_hamiltonian,
+    )
+
+    h_631g = molecular_hamiltonian(atom, basis="6-31g")
+    print(f"H2 (6-31G) before tapering: {h_631g.qubit_count()} qubits, "
+          f"{len(h_631g)} terms")
+    symmetries = find_z2_symmetries(h_631g)
+    print(f"Z2 symmetries found: {len(symmetries)}")
+    tapered_h, info = taper_hamiltonian(h_631g)
+    print(f"After tapering: {info.tapered_qubits} qubits, "
+          f"{len(tapered_h)} terms")
+
+    # ── Stage 10: Convenience functions ──
+    print("\n" + "=" * 60)
+    print("Stage 10: One-Call Convenience Functions")
+    print("=" * 60)
+    print("These require qsharp to be installed:")
+    print("  molecular_qpe(atom) -> ChemistryResourceEstimate")
+    print("  molecular_vqe(atom) -> VQEResult")
+    print("  molecular_resource_comparison(atom) -> printed table")
+
 
 if __name__ == "__main__":
     main()

@@ -86,6 +86,18 @@ all domain modules:
     ``bravyi_kitaev()``) and as registered algorithms accessible via
     ``create("qubit_mapper", "jw")``.
 
+**Qubit tapering**
+    :func:`~qdk_pythonic.domains.common.tapering.taper_hamiltonian`
+    identifies Z2 symmetries in a Pauli Hamiltonian and removes
+    redundant qubits by projecting onto a symmetry sector:
+
+    .. code-block:: python
+
+       from qdk_pythonic.domains.common.tapering import taper_hamiltonian
+
+       tapered_h, info = taper_hamiltonian(hamiltonian)
+       print(f"Reduced {info.original_qubits} -> {info.tapered_qubits} qubits")
+
 Domain Overview
 ---------------
 
@@ -153,10 +165,13 @@ understand qubit mappings.
      - Convert graphs to ``MaxCut`` / ``QAOA`` circuits.
        Supports weighted edges and arbitrary node types.
    * - `PySCF <https://pyscf.org/>`_
-     - ``run_scf``, ``get_integrals``,
-       ``molecular_hamiltonian``, ``molecular_summary``
+     - ``molecular_hamiltonian``, ``molecular_qpe``,
+       ``molecular_vqe``, ``molecular_resource_comparison``,
+       ``run_scf``, ``get_integrals``
      - Build molecular qubit Hamiltonians from geometry strings.
-       Supports active space selection and JW/BK qubit mappings.
+       One-call functions for QPE resource estimation, VQE
+       optimization, and algorithm comparison.  Supports CASCI
+       active space selection and JW/BK qubit mappings.
 
 Install the optional dependencies with:
 

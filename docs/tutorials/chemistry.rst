@@ -202,6 +202,36 @@ for chemistry simulation. Two modes are available:
    result = estimate_chemistry(data)
    result.print_report()
 
+Qubit Tapering
+---------------
+
+Qubit tapering identifies Z2 symmetries in the molecular Hamiltonian
+and removes redundant qubits, reducing the problem size:
+
+.. code-block:: python
+
+   from qdk_pythonic.domains.common.tapering import taper_hamiltonian
+
+   tapered_h, info = taper_hamiltonian(h)
+   print(f"Reduced from {info.original_qubits} to "
+         f"{info.tapered_qubits} qubits")
+   print(f"Found {info.n_symmetries} Z2 symmetries")
+
+For H2 in 6-31G this reduces 4 qubits to 2; for LiH (2e,3o) it
+reduces 3 qubits to 1. The tapered Hamiltonian can then be passed
+to QPE or VQE for lower-cost simulation.
+
+You can also control the symmetry sector:
+
+.. code-block:: python
+
+   from qdk_pythonic.domains.common.tapering import find_z2_symmetries
+
+   symmetries = find_z2_symmetries(h)
+   # Project onto the -1 sector for each symmetry
+   eigenvalues = [-1] * len(symmetries)
+   tapered_h, info = taper_hamiltonian(h, symmetry_eigenvalues=eigenvalues)
+
 Structured Resource Estimation
 -------------------------------
 
@@ -257,9 +287,49 @@ All chemistry algorithms are available through the registry:
                  basis="cc-pvdz")
    # result = est.run(atom="H 0 0 0; H 0 0 0.74")
 
+Convenience Functions
+----------------------
+
+For quick end-to-end workflows that hide all the intermediate steps,
+use the one-call functions:
+
+.. code-block:: python
+
+   from qdk_pythonic.adapters.pyscf_adapter import (
+       molecular_qpe,
+       molecular_vqe,
+       molecular_resource_comparison,
+   )
+
+   # One-call QPE with structured resource estimate (requires qsharp)
+   result = molecular_qpe(
+       "H 0 0 0; H 0 0 0.74",
+       basis="sto-3g",
+       n_estimation_qubits=8,
+   )
+   result.print_report()
+
+   # One-call VQE with UCCSD ansatz (requires qsharp)
+   vqe_result = molecular_vqe(
+       "H 0 0 0; H 0 0 0.74",
+       optimizer="COBYLA",
+       max_iterations=50,
+   )
+   print(f"Energy: {vqe_result.optimal_energy:.6f} Ha")
+
+   # Side-by-side Trotter vs qubitization comparison (requires qsharp)
+   molecular_resource_comparison(
+       "H 0 0 0; H 0 0 0.74",
+       n_estimation_qubits=8,
+   )
+
+These functions handle PySCF SCF, CASCI active space selection,
+integral extraction, fermion-to-qubit mapping, circuit construction,
+Q# code generation, and resource estimation internally.
+
 Next Steps
 -----------
 
 - :doc:`/tutorials/pyscf_integration` -- basic PySCF adapter usage
 - :doc:`/api/domains_chemistry` -- full API reference
-- :doc:`/api/domains_common` -- shared primitives (operators, mappings, LCU)
+- :doc:`/api/domains_common` -- shared primitives (operators, mappings, LCU, tapering)

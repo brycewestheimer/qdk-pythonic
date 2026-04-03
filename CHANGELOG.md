@@ -42,6 +42,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Structured resource estimation results: ``ChemistryResourceEstimate`` with logical/physical resource breakdowns
 - Bridge to ``qsharp.chemistry`` for production DF-qubitization resource estimation
 - Registry algorithms for QPE, VQE, and qubitization via PySCF
+- Qubit tapering via Z2 symmetry detection (``domains.common.tapering``): finds independent symmetries, projects onto a symmetry sector, and compacts qubit indices
+- Batch VQE expectation values: ``pauli_expectation_value()`` compiles all measurement circuits in a single Q# eval call
+- One-call convenience functions in PySCF adapter:
+  - ``molecular_qpe()`` -- geometry to structured ``ChemistryResourceEstimate``
+  - ``molecular_vqe()`` -- geometry to ``VQEResult`` with UCCSD ansatz
+  - ``molecular_resource_comparison()`` -- side-by-side Trotter vs qubitization table
 
 ### Fixed
+- PySCF adapter: CASCI active space path now works (``pyscf.mcscf`` and ``pyscf.ao2mo`` explicitly imported)
+- VQE expectation value measurement: all qubits now measured so Q# runtime can release them
 - Domain module circuit composition now remaps qubit references correctly instead of copying foreign-qubit instructions
