@@ -37,7 +37,7 @@ __all__ = [
 def _import_pyscf() -> Any:
     """Lazily import PySCF with a clear error message."""
     try:
-        import pyscf  # type: ignore[import-untyped]  # noqa: F811
+        import pyscf
     except ImportError as exc:
         raise ImportError(
             "PySCF is required for the chemistry adapter. "
