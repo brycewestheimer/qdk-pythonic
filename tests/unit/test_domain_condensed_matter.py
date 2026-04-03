@@ -173,6 +173,26 @@ def test_hubbard_simulate_dynamics() -> None:
     assert circ.total_gate_count() > 0
 
 
+@pytest.mark.unit
+def test_hubbard_fermion_operator() -> None:
+    model = HubbardModel(Chain(2), t=1.0, U=1.0)
+    fop = model.to_fermion_operator()
+    # 1 edge * 2 spins * 2 (a†a + h.c.) = 4 hopping terms
+    # 2 sites * 1 (n_up * n_dn = a†a * a†a) = 2 on-site terms
+    assert len(fop) > 0
+    assert fop.num_modes == 4  # 2 sites * 2 spins
+
+
+@pytest.mark.unit
+def test_hubbard_bk_mapping() -> None:
+    model = HubbardModel(Chain(2), t=1.0, U=1.0, mapping="bravyi_kitaev")
+    ham = model.to_hamiltonian()
+    assert ham.qubit_count() <= 4  # 2N = 4
+    assert len(ham) > 0
+    circ = ham.to_trotter_circuit(dt=0.1, steps=1)
+    assert circ.total_gate_count() > 0
+
+
 # ------------------------------------------------------------------
 # Simulation
 # ------------------------------------------------------------------

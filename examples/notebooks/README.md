@@ -16,6 +16,7 @@ Jupyter notebooks demonstrating qdk-pythonic features.
 | [10_quantum_ml.ipynb](10_quantum_ml.ipynb) | Feature encoding, quantum kernels, and variational classifiers |
 | [11_quspin_integration.ipynb](11_quspin_integration.ipynb) | QuSpin adapter: Ising and Heisenberg models with scaling studies |
 | [12_networkx_integration.ipynb](12_networkx_integration.ipynb) | NetworkX adapter: MaxCut, weighted graphs, and benchmark families |
+| [13_pyscf_integration.ipynb](13_pyscf_integration.ipynb) | PySCF chemistry adapter: molecular Hamiltonians, JW/BK mappings, active spaces |
 
 ## Prerequisites
 
@@ -26,9 +27,10 @@ Cells that run simulations or resource estimation require:
 pip install "qdk-pythonic[qsharp]"
 ```
 
-The adapter notebooks (11, 12) require their respective optional dependencies:
+The adapter notebooks (11, 12, 13) require their respective optional dependencies:
 
 ```bash
 pip install "qdk-pythonic[quspin]"    # notebook 11
 pip install "qdk-pythonic[networkx]"  # notebook 12
+pip install "qdk-pythonic[pyscf]"     # notebook 13
 ```

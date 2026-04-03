@@ -71,6 +71,21 @@ all domain modules:
     and :class:`~qdk_pythonic.domains.common.states.DiscreteProbabilityDistribution`
     for preparing initial quantum states.
 
+**Fermionic operators**
+    :class:`~qdk_pythonic.domains.common.fermion.FermionTerm` and
+    :class:`~qdk_pythonic.domains.common.fermion.FermionOperator` for
+    second-quantized Hamiltonians.  Builder functions ``creation()``,
+    ``annihilation()``, ``number_operator()``, ``hopping()``, and
+    ``from_integrals()`` simplify construction.
+
+**Qubit mappings**
+    :class:`~qdk_pythonic.domains.common.mapping.JordanWignerMapping` and
+    :class:`~qdk_pythonic.domains.common.mapping.BravyiKitaevMapping`
+    transform fermionic operators into Pauli Hamiltonians.  Both are
+    available as standalone functions (``jordan_wigner()``,
+    ``bravyi_kitaev()``) and as registered algorithms accessible via
+    ``create("qubit_mapper", "jw")``.
+
 Domain Overview
 ---------------
 
@@ -131,6 +146,11 @@ understand qubit mappings.
        ``graph_coloring_to_hamiltonian``
      - Convert graphs to ``MaxCut`` / ``QAOA`` circuits.
        Supports weighted edges and arbitrary node types.
+   * - `PySCF <https://pyscf.org/>`_
+     - ``run_scf``, ``get_integrals``,
+       ``molecular_hamiltonian``, ``molecular_summary``
+     - Build molecular qubit Hamiltonians from geometry strings.
+       Supports active space selection and JW/BK qubit mappings.
 
 Install the optional dependencies with:
 
@@ -138,9 +158,34 @@ Install the optional dependencies with:
 
    pip install "qdk-pythonic[quspin]"    # QuSpin adapter
    pip install "qdk-pythonic[networkx]"  # NetworkX adapter
-   pip install "qdk-pythonic[adapters]"  # both
+   pip install "qdk-pythonic[pyscf]"     # PySCF chemistry adapter
+   pip install "qdk-pythonic[adapters]"  # all adapters
+
+Algorithm Registry
+^^^^^^^^^^^^^^^^^^
+
+All adapters register their algorithms with a lightweight registry
+matching the QDK/Chemistry ``create()`` pattern:
+
+.. code-block:: python
+
+   from qdk_pythonic.registry import create, available
+
+   # See what's registered
+   print(available())
+
+   # Build a Hamiltonian (any backend)
+   h = create("hamiltonian_builder", "quspin").run(static_list, n_sites=8)
+   h = create("hamiltonian_builder", "pyscf").run(atom="H 0 0 0; H 0 0 0.74")
+
+   # Build a circuit
+   circuit = create("time_evolution_builder", "trotter", time=1.0).run(h)
+
+   # Map fermions to qubits
+   pauli_h = create("qubit_mapper", "jw").run(fermion_op)
 
 Adapter tutorials:
 
 - :doc:`/tutorials/quspin_integration`
 - :doc:`/tutorials/networkx_integration`
+- :doc:`/tutorials/pyscf_integration`

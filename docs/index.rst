@@ -32,6 +32,7 @@ estimation.
    tutorials/quantum_ml
    tutorials/quspin_integration
    tutorials/networkx_integration
+   tutorials/pyscf_integration
 
 .. toctree::
    :maxdepth: 2

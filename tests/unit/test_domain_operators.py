@@ -385,3 +385,49 @@ def test_pauli_identity() -> None:
     result = pauli_multiply(ident, X(0))
     assert result.pauli_ops == {0: "X"}
     assert result.coeff == pytest.approx(1.0)
+
+
+# ------------------------------------------------------------------
+# PauliHamiltonian.simplify()
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_simplify_merges_like_terms() -> None:
+    h = PauliHamiltonian([
+        PauliTerm(pauli_ops={0: "Z"}, coeff=0.5),
+        PauliTerm(pauli_ops={0: "Z"}, coeff=0.3),
+    ])
+    s = h.simplify()
+    assert len(s) == 1
+    assert s.terms[0].coeff == pytest.approx(0.8)
+
+
+@pytest.mark.unit
+def test_simplify_drops_zeros() -> None:
+    h = PauliHamiltonian([
+        PauliTerm(pauli_ops={0: "Z"}, coeff=0.5),
+        PauliTerm(pauli_ops={0: "Z"}, coeff=-0.5),
+    ])
+    s = h.simplify()
+    assert len(s) == 0
+
+
+@pytest.mark.unit
+def test_simplify_cancels_imaginary() -> None:
+    h = PauliHamiltonian([
+        PauliTerm(pauli_ops={0: "Z"}, coeff=0.5j),
+        PauliTerm(pauli_ops={0: "Z"}, coeff=-0.5j),
+    ])
+    s = h.simplify()
+    assert len(s) == 0
+
+
+@pytest.mark.unit
+def test_simplify_preserves_distinct() -> None:
+    h = PauliHamiltonian([
+        PauliTerm(pauli_ops={0: "X"}, coeff=1.0),
+        PauliTerm(pauli_ops={0: "Z"}, coeff=2.0),
+    ])
+    s = h.simplify()
+    assert len(s) == 2

@@ -18,3 +18,17 @@ NetworkX Adapter
 .. automodule:: qdk_pythonic.adapters.networkx_adapter
    :members:
    :show-inheritance:
+
+PySCF Chemistry Adapter
+-----------------------
+
+.. automodule:: qdk_pythonic.adapters.pyscf_adapter
+   :members:
+   :show-inheritance:
+
+Algorithm Registry
+------------------
+
+.. automodule:: qdk_pythonic.registry
+   :members:
+   :show-inheritance:

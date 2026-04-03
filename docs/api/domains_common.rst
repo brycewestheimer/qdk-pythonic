@@ -25,6 +25,20 @@ Ansatz
    :members:
    :show-inheritance:
 
+Fermion Operators
+-----------------
+
+.. automodule:: qdk_pythonic.domains.common.fermion
+   :members:
+   :show-inheritance:
+
+Qubit Mappings
+--------------
+
+.. automodule:: qdk_pythonic.domains.common.mapping
+   :members:
+   :show-inheritance:
+
 States
 ------
 

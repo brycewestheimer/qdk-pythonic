@@ -61,7 +61,8 @@ For external package integrations:
 ```bash
 pip install "qdk-pythonic[quspin]"    # QuSpin adapter
 pip install "qdk-pythonic[networkx]"  # NetworkX adapter
-pip install "qdk-pythonic[adapters]"  # both
+pip install "qdk-pythonic[pyscf]"     # PySCF chemistry adapter
+pip install "qdk-pythonic[adapters]"  # all adapters
 ```
 
 ## Quick Start
@@ -108,12 +109,13 @@ estimate = circ.estimate()
 - **Optimization** -- MaxCut, QUBO, and TSP problem encodings with QAOA circuit generation
 - **Finance** -- log-normal distributions, European call option pricing via quantum amplitude estimation
 - **Machine learning** -- angle and amplitude encoding, quantum kernels, variational classifiers
-- **Shared primitives** -- Pauli Hamiltonians, Trotter decomposition, hardware-efficient ansatz, state preparation
+- **Shared primitives** -- Pauli Hamiltonians, fermionic operators, Jordan-Wigner and Bravyi-Kitaev qubit mappings, Trotter decomposition, hardware-efficient ansatz, state preparation
 
 ### External Package Integrations
 
 - **QuSpin** -- convert QuSpin spin Hamiltonian specifications to Trotter circuits and resource estimates
 - **NetworkX** -- convert graph problems (MaxCut, coloring) to QAOA circuits with one function call
+- **PySCF** -- build molecular qubit Hamiltonians from geometry strings with active space selection
 
 ## Domain Adapters
 
@@ -179,6 +181,27 @@ from qdk_pythonic.adapters.networkx_adapter import solve_maxcut
 
 result = solve_maxcut(nx.random_regular_graph(3, 20, seed=42), p=3)
 # result has QAOA circuit, gate counts, depth -- zero Q# written
+```
+
+### PySCF Chemistry
+
+```python
+from qdk_pythonic.adapters.pyscf_adapter import molecular_hamiltonian
+
+h = molecular_hamiltonian("H 0 0 0; H 0 0 0.74", basis="sto-3g")
+h.print_summary()
+# 4 qubits, full pipeline from geometry to Pauli Hamiltonian
+```
+
+### Algorithm Registry
+
+All adapters register with a QDK/Chemistry-style registry:
+
+```python
+from qdk_pythonic.registry import create
+
+h = create("hamiltonian_builder", "pyscf", basis="sto-3g").run(atom="H 0 0 0; H 0 0 0.74")
+circuit = create("time_evolution_builder", "trotter", time=1.0, steps=5).run(h)
 ```
 
 ## Parameterized Circuits
