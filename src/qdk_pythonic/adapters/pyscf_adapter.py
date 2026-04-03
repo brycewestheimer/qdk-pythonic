@@ -32,6 +32,7 @@ __all__ = [
     "molecular_double_factorized",
     "molecular_hamiltonian",
     "molecular_qpe",
+    "molecular_resource_comparison",
     "molecular_summary",
     "molecular_vqe",
     "run_scf",
@@ -466,3 +467,128 @@ def molecular_vqe(
         shots=shots,
     )
     return vqe.run(initial_params=initial_params)
+
+
+def molecular_resource_comparison(
+    atom: str,
+    basis: str = "sto-3g",
+    charge: int = 0,
+    spin: int = 0,
+    n_active_electrons: int | None = None,
+    n_active_orbitals: int | None = None,
+    mapping: str = "jordan_wigner",
+    n_estimation_qubits: int = 8,
+    trotter_steps: int = 1,
+    trotter_order: int = 1,
+    estimate_params: dict[str, Any] | None = None,
+    print_table: bool = True,
+) -> list[dict[str, Any]]:
+    """Compare Trotter QPE vs qubitization QPE resource estimates.
+
+    Runs both algorithms on the same molecule and returns a
+    side-by-side comparison table.
+
+    Args:
+        atom: Molecular geometry in PySCF format.
+        basis: Basis set name.
+        charge: Molecular charge.
+        spin: 2S, number of unpaired electrons.
+        n_active_electrons: Active electrons (None = all).
+        n_active_orbitals: Active orbitals (None = all).
+        mapping: Qubit mapping.
+        n_estimation_qubits: QPE precision bits.
+        trotter_steps: Trotter steps for Trotter QPE.
+        trotter_order: Trotter-Suzuki order.
+        estimate_params: Optional resource estimator parameters.
+        print_table: If True, print a formatted comparison table.
+
+    Returns:
+        List of dicts from ``compare_estimates()``, one per algorithm.
+    """
+    from qdk_pythonic.domains.chemistry.qpe import ChemistryQPE
+    from qdk_pythonic.domains.common.lcu import QubitizationQPE
+    from qdk_pythonic.execution.chemistry_estimate import (
+        compare_estimates,
+        parse_estimation_result,
+    )
+
+    scf_obj = run_scf(atom, basis, charge, spin)
+    h1e, h2e, nuc = get_integrals(
+        scf_obj, n_active_electrons, n_active_orbitals,
+    )
+    n_elec = int(scf_obj.mol.nelectron)
+    if n_active_electrons is not None:
+        n_elec = n_active_electrons
+
+    fermion_op = from_integrals(h1e, h2e, nuc)
+    if mapping == "bravyi_kitaev":
+        pauli_h = BravyiKitaevMapping().map(fermion_op)
+    else:
+        pauli_h = JordanWignerMapping().map(fermion_op)
+
+    ham_info = {
+        "molecule": atom,
+        "basis": basis,
+        "n_orbitals": len(h1e),
+        "n_electrons": n_elec,
+    }
+
+    estimates = []
+
+    # Trotter QPE
+    trotter_qpe = ChemistryQPE(
+        hamiltonian=pauli_h,
+        n_electrons=n_elec,
+        n_estimation_qubits=n_estimation_qubits,
+        trotter_steps=trotter_steps,
+        trotter_order=trotter_order,
+    )
+    trotter_circ = trotter_qpe.to_circuit()
+    trotter_raw = trotter_circ.estimate(params=estimate_params)
+    estimates.append(parse_estimation_result(
+        trotter_raw,
+        algorithm_name="trotter_qpe",
+        hamiltonian_info=ham_info,
+    ))
+
+    # Qubitization QPE
+    qubit_qpe = QubitizationQPE(
+        hamiltonian=pauli_h,
+        n_electrons=n_elec,
+        n_estimation_qubits=n_estimation_qubits,
+    )
+    qubit_circ = qubit_qpe.to_circuit()
+    qubit_raw = qubit_circ.estimate(params=estimate_params)
+    estimates.append(parse_estimation_result(
+        qubit_raw,
+        algorithm_name="qubitization_qpe",
+        hamiltonian_info=ham_info,
+    ))
+
+    table = compare_estimates(estimates)
+
+    if print_table:
+        _print_comparison_table(estimates)
+
+    return table
+
+
+def _print_comparison_table(
+    estimates: list[Any],
+) -> None:
+    """Print a formatted comparison table."""
+    header = (
+        f"{'Algorithm':<22} {'Logical Q':>10} {'T-gates':>10} "
+        f"{'Phys Q':>12} {'Runtime':>14} {'Code Dist':>10}"
+    )
+    print(header)
+    print("-" * len(header))
+    for est in estimates:
+        print(
+            f"{est.algorithm_name:<22} "
+            f"{est.logical.logical_qubits:>10} "
+            f"{est.logical.t_count:>10} "
+            f"{est.physical.physical_qubits:>12} "
+            f"{est.physical.runtime_human:>14} "
+            f"{est.physical.code_distance:>10}"
+        )

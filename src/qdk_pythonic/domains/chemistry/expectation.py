@@ -15,7 +15,8 @@ Example::
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
+import uuid
+from typing import TYPE_CHECKING, Any
 
 from qdk_pythonic.domains.common.operators import PauliHamiltonian, PauliTerm
 
@@ -37,6 +38,9 @@ def pauli_expectation_value(
 
     Identity terms contribute their coefficient directly.
 
+    Measurement circuits for commuting Pauli groups are compiled
+    in a single batch to reduce Q# compilation overhead.
+
     Args:
         hamiltonian: The Hamiltonian to measure.
         circuit: The state preparation circuit.
@@ -47,21 +51,31 @@ def pauli_expectation_value(
         The expectation value as a float.
     """
     groups = group_commuting_terms(hamiltonian)
-    total_energy = 0.0
 
+    # Separate identity groups from measurement groups
+    identity_energy = 0.0
+    measurement_groups: list[list[PauliTerm]] = []
     for group in groups:
-        # Check if group is all-identity terms
-        all_identity = all(not t.pauli_ops for t in group)
-        if all_identity:
+        if all(not t.pauli_ops for t in group):
             for term in group:
-                total_energy += term.coeff.real
-            continue
+                identity_energy += term.coeff.real
+        else:
+            measurement_groups.append(group)
 
-        # Build measurement circuit for this group
-        meas_circ = _build_measurement_circuit(circuit, group)
-        results = meas_circ.run(shots=shots, seed=seed)
+    if not measurement_groups:
+        return identity_energy
 
-        # Compute expectation for each term from the shared results
+    # Build all measurement circuits
+    circuits: list[Circuit] = []
+    for group in measurement_groups:
+        circuits.append(_build_measurement_circuit(circuit, group))
+
+    # Batch-run all circuits
+    all_results = _batch_run_circuits(circuits, shots=shots, seed=seed)
+
+    # Compute expectation values from results
+    total_energy = identity_energy
+    for group, results in zip(measurement_groups, all_results):
         for term in group:
             if not term.pauli_ops:
                 total_energy += term.coeff.real
@@ -166,6 +180,73 @@ def _build_measurement_circuit(
         circ.measure(q[qi])
 
     return circ
+
+
+def _batch_run_circuits(
+    circuits: list[Circuit],
+    shots: int,
+    seed: int | None = None,
+) -> list[list[Any]]:
+    """Compile and run multiple circuits with a single Q# eval call.
+
+    Generates all Q# operations in one code block, compiles them
+    in a single ``qsharp.eval()`` call, then runs each separately.
+    This reduces per-circuit compilation overhead compared to
+    calling ``circuit.run()`` on each independently.
+
+    Args:
+        circuits: List of circuits to run.
+        shots: Number of shots per circuit.
+        seed: Optional random seed.
+
+    Returns:
+        List of result lists, one per circuit.
+    """
+    from qdk_pythonic.codegen.qsharp import QSharpCodeGenerator
+    from qdk_pythonic.exceptions import ExecutionError
+    from qdk_pythonic.execution._compat import import_qsharp
+
+    qsharp = import_qsharp()
+    generator = QSharpCodeGenerator()
+
+    batch_id = uuid.uuid4().hex[:6]
+    op_names: list[str] = []
+    code_blocks: list[str] = []
+
+    for i, circ in enumerate(circuits):
+        name = f"_qdk_batch_{batch_id}_{i}"
+        op_names.append(name)
+        code_blocks.append(generator.generate_operation(name, circ))
+
+    # Single eval for all operations
+    combined_code = "\n".join(code_blocks)
+    try:
+        qsharp.eval(combined_code)
+    except Exception as e:
+        raise ExecutionError(
+            f"Batch Q# compilation failed: {e}"
+        ) from e
+
+    # Run each operation
+    all_results: list[list[Any]] = []
+    run_kwargs: dict[str, Any] = {"shots": shots}
+    if seed is not None:
+        run_kwargs["seed"] = seed
+
+    for name in op_names:
+        try:
+            results = qsharp.run(f"{name}()", **run_kwargs)
+            result_list = (
+                list(results) if not isinstance(results, list)
+                else results
+            )
+            all_results.append(result_list)
+        except Exception as e:
+            raise ExecutionError(
+                f"Batch simulation failed for '{name}': {e}"
+            ) from e
+
+    return all_results
 
 
 def _expectation_from_results(

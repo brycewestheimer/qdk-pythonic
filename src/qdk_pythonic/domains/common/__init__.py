@@ -47,6 +47,11 @@ from qdk_pythonic.domains.common.states import (
     DiscreteProbabilityDistribution,
     UniformSuperposition,
 )
+from qdk_pythonic.domains.common.tapering import (
+    TaperingInfo,
+    find_z2_symmetries,
+    taper_hamiltonian,
+)
 
 # Register qubit mapping algorithms with the global registry.
 load_mappings()
@@ -66,7 +71,10 @@ __all__ = [
     "QubitizationQPE",
     "QubitizationWalkOperator",
     "SelectOracle",
+    "TaperingInfo",
     "TrotterEvolution",
+    "find_z2_symmetries",
+    "taper_hamiltonian",
     "UniformSuperposition",
     "X",
     "Y",
