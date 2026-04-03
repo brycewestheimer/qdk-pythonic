@@ -96,6 +96,11 @@ Domain Overview
    * - Domain
      - Key classes
      - Produces
+   * - Chemistry
+     - ``HartreeFockState``, ``UCCSDAnsatz``, ``ChemistryQPE``,
+       ``VQE``, ``ChemistryQubitization``, ``FCIDUMPData``,
+       ``DoubleFactorizedHamiltonian``
+     - QPE/VQE/qubitization circuits, resource estimates
    * - Condensed matter
      - ``IsingModel``, ``HeisenbergModel``, ``HubbardModel``,
        ``Chain``, ``SquareLattice``, ``HexagonalLattice``,
@@ -115,6 +120,7 @@ Domain Overview
 
 Each domain has a dedicated tutorial with worked examples:
 
+- :doc:`/tutorials/chemistry`
 - :doc:`/tutorials/condensed_matter`
 - :doc:`/tutorials/optimization`
 - :doc:`/tutorials/quantum_finance`

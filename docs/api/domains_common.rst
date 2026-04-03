@@ -45,3 +45,17 @@ States
 .. automodule:: qdk_pythonic.domains.common.states
    :members:
    :show-inheritance:
+
+Double Factorization
+---------------------
+
+.. automodule:: qdk_pythonic.domains.common.double_factorization
+   :members:
+   :show-inheritance:
+
+LCU / Qubitization Primitives
+------------------------------
+
+.. automodule:: qdk_pythonic.domains.common.lcu
+   :members:
+   :show-inheritance:

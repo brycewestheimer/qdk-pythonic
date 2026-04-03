@@ -26,6 +26,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   - Finance: log-normal distributions, European call option pricing, quantum amplitude estimation
   - Machine learning: angle/amplitude encoding, quantum kernels, variational classifiers
 - Shared primitives: Pauli Hamiltonians, Trotter decomposition, hardware-efficient ansatz, state preparation
+- Fermionic operators with Jordan-Wigner and Bravyi-Kitaev qubit mappings
+- PySCF chemistry adapter: molecular Hamiltonians from geometry strings with active space (CASCI) selection
+- Quantum chemistry domain (``domains.chemistry``):
+  - Hartree-Fock state preparation (JW and BK encodings)
+  - UCCSD variational ansatz with spin-preserving single and double excitations
+  - Quantum Phase Estimation for molecular ground-state energy (Trotterized)
+  - Variational Quantum Eigensolver with scipy classical optimizer
+  - Pauli expectation value measurement with commuting-term grouping
+  - FCIDUMP file I/O for molecular integral interchange
+  - Molecular orbital information reporting
+- Double-factorized Hamiltonian representation (``domains.common.double_factorization``)
+- Gate-level LCU framework: PREPARE, SELECT, walk operator, qubitization QPE (``domains.common.lcu``)
+- Chemistry qubitization wrapper with gate-level and qsharp.chemistry bridge modes
+- Structured resource estimation results: ``ChemistryResourceEstimate`` with logical/physical resource breakdowns
+- Bridge to ``qsharp.chemistry`` for production DF-qubitization resource estimation
+- Registry algorithms for QPE, VQE, and qubitization via PySCF
 
 ### Fixed
 - Domain module circuit composition now remaps qubit references correctly instead of copying foreign-qubit instructions

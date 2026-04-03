@@ -33,6 +33,7 @@ estimation.
    tutorials/quspin_integration
    tutorials/networkx_integration
    tutorials/pyscf_integration
+   tutorials/chemistry
 
 .. toctree::
    :maxdepth: 2
@@ -81,6 +82,7 @@ estimation.
    :caption: Domain Modules
 
    api/domains_common
+   api/domains_chemistry
    api/domains_condensed_matter
    api/domains_optimization
    api/domains_finance

@@ -28,6 +28,8 @@ from qdk_pythonic.exceptions import ExecutionError
 
 __all__ = [
     "get_integrals",
+    "get_orbital_info",
+    "molecular_double_factorized",
     "molecular_hamiltonian",
     "molecular_summary",
     "run_scf",
@@ -133,6 +135,75 @@ def get_integrals(
         return h1e, h2e_phys, nuclear_repulsion
 
 
+def get_orbital_info(
+    scf_obj: Any,
+    n_active_electrons: int | None = None,
+    n_active_orbitals: int | None = None,
+) -> Any:
+    """Extract molecular orbital information from a PySCF SCF object.
+
+    Args:
+        scf_obj: Converged PySCF SCF object.
+        n_active_electrons: Active electrons for CASCI.
+        n_active_orbitals: Active orbitals for CASCI.
+
+    Returns:
+        MolecularOrbitalInfo with orbital energies, occupations,
+        and active space metadata.
+    """
+    from qdk_pythonic.domains.chemistry.orbital_info import (
+        MolecularOrbitalInfo,
+    )
+
+    return MolecularOrbitalInfo.from_pyscf(
+        scf_obj, n_active_electrons, n_active_orbitals,
+    )
+
+
+def molecular_double_factorized(
+    atom: str,
+    basis: str = "sto-3g",
+    charge: int = 0,
+    spin: int = 0,
+    n_active_electrons: int | None = None,
+    n_active_orbitals: int | None = None,
+    threshold: float = 1e-6,
+) -> Any:
+    """Build a double-factorized Hamiltonian for a molecule.
+
+    Runs the pipeline: geometry -> SCF -> integrals
+    -> double factorization.
+
+    Args:
+        atom: Molecular geometry in PySCF format.
+        basis: Basis set name.
+        charge: Molecular charge.
+        spin: 2S, number of unpaired electrons.
+        n_active_electrons: Active electrons (None = all).
+        n_active_orbitals: Active orbitals (None = all).
+        threshold: Truncation threshold for factorization.
+
+    Returns:
+        DoubleFactorizedHamiltonian for the molecule.
+    """
+    from qdk_pythonic.domains.common.double_factorization import (
+        double_factorize,
+    )
+
+    scf_obj = run_scf(atom, basis, charge, spin)
+    h1e, h2e, nuc_repulsion = get_integrals(
+        scf_obj, n_active_electrons, n_active_orbitals,
+    )
+    n_electrons = int(scf_obj.mol.nelectron)
+    if n_active_electrons is not None:
+        n_electrons = n_active_electrons
+    return double_factorize(
+        h1e, h2e, nuc_repulsion,
+        n_electrons=n_electrons,
+        threshold=threshold,
+    )
+
+
 def molecular_hamiltonian(
     atom: str,
     basis: str = "sto-3g",
@@ -202,6 +273,10 @@ def molecular_summary(
     evolution = TrotterEvolution(hamiltonian=pauli_h, time=1.0, steps=1)
     circuit = evolution.to_circuit()
 
+    orbital_info = get_orbital_info(
+        scf_obj, n_active_electrons, n_active_orbitals,
+    )
+
     result: dict[str, Any] = {
         "scf_energy": float(scf_obj.e_tot),
         "n_orbitals": len(h1e),
@@ -209,6 +284,7 @@ def molecular_summary(
         "n_fermion_terms": len(fermion_op),
         "hamiltonian": pauli_h,
         "hamiltonian_summary": pauli_h.summary(),
+        "orbital_info": orbital_info,
         "circuit": circuit,
         "n_qubits": circuit.qubit_count(),
         "gate_count": circuit.gate_count(),

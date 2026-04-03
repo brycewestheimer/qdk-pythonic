@@ -6,6 +6,10 @@ Re-exports the key types from sub-modules for convenient access::
 """
 
 from qdk_pythonic.domains.common.ansatz import HardwareEfficientAnsatz
+from qdk_pythonic.domains.common.double_factorization import (
+    DoubleFactorizedHamiltonian,
+    double_factorize,
+)
 from qdk_pythonic.domains.common.evolution import TrotterEvolution
 from qdk_pythonic.domains.common.fermion import (
     FermionOperator,
@@ -15,6 +19,12 @@ from qdk_pythonic.domains.common.fermion import (
     from_integrals,
     hopping,
     number_operator,
+)
+from qdk_pythonic.domains.common.lcu import (
+    PrepareOracle,
+    QubitizationQPE,
+    QubitizationWalkOperator,
+    SelectOracle,
 )
 from qdk_pythonic.domains.common.mapping import (
     BravyiKitaevMapping,
@@ -44,6 +54,7 @@ load_mappings()
 __all__ = [
     "BasisState",
     "BravyiKitaevMapping",
+    "DoubleFactorizedHamiltonian",
     "DiscreteProbabilityDistribution",
     "FermionOperator",
     "FermionTerm",
@@ -51,6 +62,10 @@ __all__ = [
     "JordanWignerMapping",
     "PauliHamiltonian",
     "PauliTerm",
+    "PrepareOracle",
+    "QubitizationQPE",
+    "QubitizationWalkOperator",
+    "SelectOracle",
     "TrotterEvolution",
     "UniformSuperposition",
     "X",
@@ -58,6 +73,7 @@ __all__ = [
     "Z",
     "annihilation",
     "bravyi_kitaev",
+    "double_factorize",
     "creation",
     "from_integrals",
     "hopping",

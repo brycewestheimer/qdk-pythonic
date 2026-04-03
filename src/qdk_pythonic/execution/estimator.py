@@ -92,6 +92,37 @@ def estimate_circuit(
     return result
 
 
+def estimate_and_parse(
+    circuit: Circuit,
+    params: dict[str, Any] | None = None,
+    algorithm_name: str = "circuit",
+    hamiltonian_info: dict[str, Any] | None = None,
+) -> Any:
+    """Estimate resources and return a structured result.
+
+    Combines ``estimate_circuit()`` with
+    ``parse_estimation_result()`` for convenience.
+
+    Args:
+        circuit: The circuit to estimate.
+        params: Optional estimator parameters.
+        algorithm_name: Label for the algorithm.
+        hamiltonian_info: Optional chemistry metadata.
+
+    Returns:
+        A ChemistryResourceEstimate.
+    """
+    from qdk_pythonic.execution.chemistry_estimate import (
+        parse_estimation_result,
+    )
+
+    raw = estimate_circuit(circuit, params=params)
+    return parse_estimation_result(
+        raw, algorithm_name=algorithm_name,
+        hamiltonian_info=hamiltonian_info,
+    )
+
+
 def estimate_circuit_batch(
     circuit: Circuit | list[Circuit], params_list: list[dict[str, Any]]
 ) -> list[Any]:

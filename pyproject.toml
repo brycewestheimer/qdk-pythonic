@@ -31,7 +31,7 @@ qsharp = ["qsharp>=1.25"]
 quspin = ["quspin>=0.3.7"]
 networkx = ["networkx>=3.0"]
 pyscf = ["pyscf>=2.0"]
-chemistry = ["pyscf>=2.0"]
+chemistry = ["pyscf>=2.0", "scipy>=1.10"]
 adapters = ["quspin>=0.3.7", "networkx>=3.0", "pyscf>=2.0"]
 dev = [
     "pytest>=8.0",
@@ -82,4 +82,8 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["numpy", "numpy.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["scipy", "scipy.*"]
 ignore_missing_imports = true

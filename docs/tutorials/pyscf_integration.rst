@@ -148,6 +148,8 @@ call:
 Next Steps
 -----------
 
+- :doc:`/tutorials/chemistry` -- QPE, VQE, UCCSD, qubitization, and resource estimation
 - :doc:`/tutorials/quspin_integration` -- condensed matter Hamiltonians
 - :doc:`/tutorials/networkx_integration` -- graph optimization
-- :doc:`/api/adapters` -- full API reference
+- :doc:`/api/domains_chemistry` -- chemistry API reference
+- :doc:`/api/adapters` -- full adapter API reference

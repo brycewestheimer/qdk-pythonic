@@ -42,3 +42,10 @@ with contextlib.suppress(ImportError):
 
     _load_pyscf()
 
+with contextlib.suppress(ImportError):
+    from qdk_pythonic.adapters.pyscf_chemistry import (
+        load as _load_pyscf_chem,
+    )
+
+    _load_pyscf_chem()
+

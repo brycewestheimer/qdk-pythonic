@@ -56,12 +56,18 @@ To run circuits on the Q# simulator or use resource estimation:
 pip install "qdk-pythonic[qsharp]"
 ```
 
-For external package integrations:
+For quantum chemistry with PySCF (QPE, VQE, UCCSD, qubitization):
+
+```bash
+pip install "qdk-pythonic[chemistry]"
+```
+
+For other external package integrations:
 
 ```bash
 pip install "qdk-pythonic[quspin]"    # QuSpin adapter
 pip install "qdk-pythonic[networkx]"  # NetworkX adapter
-pip install "qdk-pythonic[pyscf]"     # PySCF chemistry adapter
+pip install "qdk-pythonic[pyscf]"     # PySCF adapter (Hamiltonians only)
 pip install "qdk-pythonic[adapters]"  # all adapters
 ```
 
@@ -103,8 +109,9 @@ estimate = circ.estimate()
 - **Raw Q# escape hatch** -- embed arbitrary Q# fragments for constructs the builder can't express
 - **Type-safe** -- full type annotations, passes `mypy --strict`
 
-### Domain Adapters
+### Domain Modules
 
+- **Quantum chemistry** -- Hartree-Fock state prep, UCCSD ansatz, QPE, VQE, qubitization/LCU, double factorization, FCIDUMP I/O, structured resource estimation
 - **Condensed matter** -- Ising, Heisenberg, and Hubbard models on chain, square, and hexagonal lattices with Trotter time evolution
 - **Optimization** -- MaxCut, QUBO, and TSP problem encodings with QAOA circuit generation
 - **Finance** -- log-normal distributions, European call option pricing via quantum amplitude estimation
@@ -191,6 +198,51 @@ from qdk_pythonic.adapters.pyscf_adapter import molecular_hamiltonian
 h = molecular_hamiltonian("H 0 0 0; H 0 0 0.74", basis="sto-3g")
 h.print_summary()
 # 4 qubits, full pipeline from geometry to Pauli Hamiltonian
+```
+
+### Quantum Chemistry Algorithms
+
+The chemistry domain reproduces the Microsoft qdk-chemistry workflow:
+molecular geometry to quantum phase estimation, VQE, and qubitization --
+all through the QDK.
+
+```python
+from qdk_pythonic.adapters.pyscf_adapter import molecular_hamiltonian
+from qdk_pythonic.domains.chemistry import (
+    HartreeFockState, UCCSDAnsatz, ChemistryQPE, VQE,
+)
+
+# Build qubit Hamiltonian from molecular geometry
+h = molecular_hamiltonian("H 0 0 0; H 0 0 0.74", basis="sto-3g")
+
+# Quantum Phase Estimation with Trotter simulation
+qpe = ChemistryQPE(hamiltonian=h, n_electrons=2, n_estimation_qubits=8)
+circuit = qpe.to_circuit()
+print(f"QPE circuit: {circuit.qubit_count()} qubits, {circuit.total_gate_count()} gates")
+
+# UCCSD ansatz for VQE
+ansatz = UCCSDAnsatz(n_spatial_orbitals=2, n_electrons=2)
+circuit = ansatz.to_circuit([0.1] * ansatz.num_parameters)
+
+# Double factorization for qubitization
+from qdk_pythonic.domains.common.double_factorization import double_factorize
+from qdk_pythonic.adapters.pyscf_adapter import run_scf, get_integrals
+
+scf = run_scf("H 0 0 0; H 0 0 0.74")
+h1e, h2e, nuc = get_integrals(scf)
+df = double_factorize(h1e, h2e, nuc, n_electrons=2)
+df.print_summary()
+```
+
+FCIDUMP file I/O is also supported for interoperability with other
+quantum chemistry packages:
+
+```python
+from qdk_pythonic.domains.chemistry import read_fcidump
+
+data = read_fcidump("molecule.fcidump")
+hamiltonian = data.to_hamiltonian()
+df_hamiltonian = data.to_double_factorized()
 ```
 
 ### Algorithm Registry

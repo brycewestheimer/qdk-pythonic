@@ -26,6 +26,13 @@ PySCF Chemistry Adapter
    :members:
    :show-inheritance:
 
+PySCF Chemistry Algorithms
+---------------------------
+
+.. automodule:: qdk_pythonic.adapters.pyscf_chemistry
+   :members:
+   :show-inheritance:
+
 Algorithm Registry
 ------------------
 
