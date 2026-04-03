@@ -291,3 +291,41 @@ def test_trotter_real_complex_coeff_succeeds() -> None:
     h = PauliHamiltonian([PauliTerm(pauli_ops={0: "Z"}, coeff=complex(1.0, 0.0))])
     circ = h.to_trotter_circuit(dt=0.1, steps=1)
     assert circ.total_gate_count() == 1
+
+
+# ------------------------------------------------------------------
+# Hamiltonian summary
+# ------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_summary_ising() -> None:
+    edges = [(0, 1), (1, 2), (2, 3)]
+    h = PauliHamiltonian.from_ising(edges, n_qubits=4, J=1.0, h=0.5)
+    s = h.summary()
+    assert s["n_qubits"] == 4
+    assert s["n_terms"] == 7  # 3 ZZ + 4 X
+    assert s["max_pauli_weight"] == 2
+    assert s["weight_distribution"] == {1: 4, 2: 3}
+    assert s["one_norm"] == pytest.approx(5.0)  # 3*1.0 + 4*0.5
+
+
+@pytest.mark.unit
+def test_summary_empty() -> None:
+    h = PauliHamiltonian()
+    s = h.summary()
+    assert s["n_qubits"] == 0
+    assert s["n_terms"] == 0
+    assert s["max_pauli_weight"] == 0
+    assert s["weight_distribution"] == {}
+    assert s["one_norm"] == 0.0
+
+
+@pytest.mark.unit
+def test_print_summary(capsys: pytest.CaptureFixture[str]) -> None:
+    h = PauliHamiltonian.from_ising([(0, 1)], n_qubits=2, J=1.0, h=0.5)
+    h.print_summary()
+    captured = capsys.readouterr()
+    assert "PauliHamiltonian:" in captured.out
+    assert "3 terms" in captured.out
+    assert "2 qubits" in captured.out

@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from qdk_pythonic.core.circuit import Circuit
@@ -146,6 +146,53 @@ class PauliHamiltonian:
         for term in self.terms:
             indices.update(term.pauli_ops.keys())
         return sorted(indices)
+
+    def summary(self) -> dict[str, Any]:
+        """Return a summary of the Hamiltonian for inspection.
+
+        Mirrors the role of QDK/Chemistry's QubitHamiltonian.get_summary().
+
+        Returns:
+            Dict with keys: n_qubits, n_terms, max_pauli_weight,
+            weight_distribution, one_norm.
+        """
+        if not self.terms:
+            return {
+                "n_qubits": 0,
+                "n_terms": 0,
+                "max_pauli_weight": 0,
+                "weight_distribution": {},
+                "one_norm": 0.0,
+            }
+
+        weight_dist: dict[int, int] = {}
+        max_weight = 0
+        one_norm = 0.0
+
+        for term in self.terms:
+            weight = len(term.pauli_ops)
+            max_weight = max(max_weight, weight)
+            weight_dist[weight] = weight_dist.get(weight, 0) + 1
+            one_norm += abs(term.coeff)
+
+        return {
+            "n_qubits": self.qubit_count(),
+            "n_terms": len(self.terms),
+            "max_pauli_weight": max_weight,
+            "weight_distribution": dict(sorted(weight_dist.items())),
+            "one_norm": one_norm,
+        }
+
+    def print_summary(self) -> None:
+        """Print a human-readable summary of the Hamiltonian."""
+        s = self.summary()
+        print(
+            f"PauliHamiltonian: {s['n_terms']} terms on "
+            f"{s['n_qubits']} qubits"
+        )
+        print(f"  Max Pauli weight: {s['max_pauli_weight']}")
+        print(f"  1-norm: {s['one_norm']:.4f}")
+        print(f"  Weight distribution: {s['weight_distribution']}")
 
     def to_trotter_circuit(
         self,
